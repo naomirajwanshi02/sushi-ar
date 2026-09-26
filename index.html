@@ -63,6 +63,7 @@
   .try{font-size:22px;line-height:1;transition:transform .3s cubic-bezier(.34,1.56,.64,1),
        opacity .3s,filter .3s}
   .try::before{content:'❤️'}
+  body:not(.ingame) #top{visibility:hidden}   /* clean viewfinder while scanning */
   .try.gone{opacity:.3;filter:grayscale(1);transform:scale(.75)}
 
   /* order ticket */
@@ -140,6 +141,8 @@
          padding:34px 26px;background:rgba(6,8,11,.93);
          backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
   .sheet[hidden]{display:none}
+  /* main page sits over the live camera, so keep the tracked plate visible */
+  #gate{background:rgba(6,8,11,.62)}
   .sheet h1{margin:0 0 2px;font-size:31px;font-weight:850;letter-spacing:-.025em}
   .sheet p{margin:0;max-width:34ch;color:var(--dim);font-size:14.5px}
   .btn{pointer-events:auto;margin-top:20px;border:0;border-radius:99px;
@@ -200,7 +203,7 @@
 <div id="flash"></div>
 <div id="dbg" hidden></div>
 
-<section class="sheet" id="gate">
+<section class="sheet" id="gate" hidden>
   <h1>🍣 Sushi Chef</h1>
   <p>Build sushi in AR</p>
   <button class="btn" id="startBtn">Start</button>
@@ -878,7 +881,7 @@ function buildOrder(){
     const node = new THREE.Group();
     node.add(tilted(inner));
     const lab = labelSprite(ING[key].name);
-    lab.position.set(0, 0, .14);   // further below model (labels are 2x bigger now)
+    lab.position.set(0, -.085, .01);   // just below the model on the card, not lifted toward the camera
     node.add(lab);
     node.position.set(pts[i][0], pts[i][1], LIFT);
     node.scale.setScalar(.001);
@@ -1060,11 +1063,20 @@ function penalise(reason, item){
     tw(.45, EASE.out, (k) => {
       item.node.position.set(home.x + Math.sin(k * 34) * .022 * (1 - k), home.y, home.z);
     });
-    item.inner.traverse(o => { if (o.isMesh){
-      const orig = o.material.color.getHex();
-      o.material.color.setHex(0xff3b3b);
-      setTimeout(() => o.material?.color?.setHex(orig), 260);
-    }});
+    // Several meshes share one material (rice grains, sesame, ginger), and a
+    // second wrong tap can land mid-flash, so remember the true colour once
+    // per material rather than reading back a colour that is already red.
+    const mats = new Set();
+    item.inner.traverse(o => { if (o.isMesh) mats.add(o.material); });
+    mats.forEach(mt => {
+      mt.userData.flashOrig ??= mt.color.getHex();
+      mt.color.setHex(0xff3b3b);
+      clearTimeout(mt.userData.flashTimer);
+      mt.userData.flashTimer = setTimeout(() => {
+        mt.color.setHex(mt.userData.flashOrig);
+        delete mt.userData.flashOrig;
+      }, 260);
+    });
   } else {
     showStatus("⏱️", 'Time ran out');
     setTimeout(() => showStatus(''), 1200);
@@ -1081,9 +1093,11 @@ function startGame(){
   clearPalette(); clearStack();
   [...el.tries.querySelectorAll('.try')].forEach(d => d.classList.remove('gone'));
   el.over.hidden = el.gate.hidden = true;
+  document.body.classList.add('ingame');
   el.score.textContent = '0';
   buildOrder();
   showStatus(S.tracked ? '' : '📷 🃏');
+  el.scanGuide.classList.toggle('on', !S.tracked);
 }
 
 function gameOver(why){
@@ -1231,7 +1245,10 @@ async function startAR(){
   const { MindARThree } = await import('mindar-image-three');
   const mindar = new MindARThree({ container: el.ar, imageTargetSrc: TARGET_SRC,
                                    uiScanning:'no', uiLoading:'no',
-                                   filterMinCF: 3.0, filterBeta: 30,
+                                   // One-euro filter; MindAR measures time in ms, so
+                                   // 0.001 is a 1 Hz cutoff at rest (its default).
+                                   // Values like 1.0 or 3.0 mean 1-3 kHz: no smoothing.
+                                   filterMinCF: 0.001, filterBeta: 1000,
                                    warmupTolerance: 8, missTolerance: 10 });
   const { renderer, scene, camera } = mindar;
   activeCamera = camera;
@@ -1241,6 +1258,7 @@ async function startAR(){
     S.tracked = true;
     showStatus('');
     el.scanGuide.classList.remove('on');
+    if (S.phase === 'idle') showMenu();       // first lock-on: reveal the main page
   };
   anchor.onTargetLost  = () => {
     S.tracked = false;
@@ -1250,7 +1268,7 @@ async function startAR(){
     }
   };
   await mindar.start();
-  el.scanGuide.classList.add('on');  // Show scanning guide initially
+  if (!S.tracked) el.scanGuide.classList.add('on');  // Show scanning guide until the target locks
 
   /* MindAR normalises anchor space to the target image's WIDTH (see the
      postMatrix it builds from markerDimensions), so the card's height is
@@ -1319,22 +1337,25 @@ async function startDemo(){
 }
 
 // ---------------------------------------------------------------- boot
+/* Flow: page opens -> camera viewfinder (scan the sushi picture) -> first
+   lock-on shows the main page -> Start begins the game. Demo mode has nothing
+   to scan, so it shows the main page as soon as the camera is up. */
+function showMenu(){
+  showStatus('');
+  el.gate.hidden = false;
+}
+
 let booted = false;
 async function boot(){
   if (booted) return;
   booted = true;
-  Sfx.unlock();
   el.gate.hidden = true;
   el.dbg.hidden = !DEBUG;
   showStatus('📷');
   try {
     if (DEMO) await startDemo(); else await startAR();
     showStatus('');
-    startGame();
-    if (DEMO){
-      showStatus('👀');
-      setTimeout(() => showStatus(''), 2400);
-    }
+    if (DEMO || S.tracked) showMenu();
   } catch (e){
     booted = false;
     fail(/NotAllowedError|Permission/i.test(String(e))
@@ -1346,13 +1367,15 @@ async function boot(){
   }
 }
 
-el.startBtn.addEventListener('click', boot);
+// Audio can only be unlocked from a tap, so it waits for Start rather than boot.
+el.startBtn.addEventListener('click', () => { Sfx.unlock(); el.gate.hidden = true; startGame(); });
 el.againBtn.addEventListener('click', () => { Sfx.unlock(); startGame(); });
-el.retryBtn.addEventListener('click', () => { el.err.hidden = true; el.gate.hidden = false; });
+el.retryBtn.addEventListener('click', () => { el.err.hidden = true; booted ? showMenu() : boot(); });
 if (DEMO) el.gateHint.innerHTML =
   'Demo mode — no image target needed. Remove <code>?demo=1</code> once you have printed the target.';
 window.addEventListener('error', e => fail(e.error || e.message));
 window.addEventListener('unhandledrejection', e => fail(e.reason));
+window.addEventListener('load', boot);        // open the viewfinder straight away
 </script>
 </body>
 </html>

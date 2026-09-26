@@ -129,5 +129,17 @@ run(0.1);
 ok(S.busy, 'busy during completion');
 ok(S.score>=scoreWhileBusy, 'no negative scoring while busy');
 
-console.log(fails ? `\n${fails} FAILURE(S)` : '\nALL 40 CHEF-MODE TESTS PASSED');
+console.log('\n--- wrong-pick flash restores shared materials ---');
+S.tries=99; startGame(); S.tracked=true; S.tries=99;
+const rice = ING.rice.build();     // 9 grains share one material
+const colours = (g) => { const c=[]; g.traverse(o=>{ if(o.isMesh) c.push(o.material.color.getHex()); }); return c.join(); };
+const before = colours(rice);
+const fake = { key:'rice', node:rice, inner:rice, home:rice.position.clone(), alive:true };
+penalise('wrong', fake);
+penalise('wrong', fake);           // second tap lands mid-flash
+ok(colours(rice)!==before, 'wrong pick flashes the item red');
+await new Promise(r=>setTimeout(r, 400));
+ok(colours(rice)===before, 'every mesh gets its own colour back', colours(rice));
+
+console.log(fails ? `\n${fails} FAILURE(S)` : '\nALL 42 CHEF-MODE TESTS PASSED');
 process.exit(fails?1:0);
