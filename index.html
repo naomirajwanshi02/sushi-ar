@@ -63,6 +63,7 @@
   .try{font-size:22px;line-height:1;transition:transform .3s cubic-bezier(.34,1.56,.64,1),
        opacity .3s,filter .3s}
   .try::before{content:'❤️'}
+  body:not(.ingame) #top{visibility:hidden}   /* clean viewfinder while scanning */
   .try.gone{opacity:.3;filter:grayscale(1);transform:scale(.75)}
 
   /* order ticket */
@@ -880,7 +881,7 @@ function buildOrder(){
     const node = new THREE.Group();
     node.add(tilted(inner));
     const lab = labelSprite(ING[key].name);
-    lab.position.set(0, 0, .14);   // further below model (labels are 2x bigger now)
+    lab.position.set(0, -.085, .01);   // just below the model on the card, not lifted toward the camera
     node.add(lab);
     node.position.set(pts[i][0], pts[i][1], LIFT);
     node.scale.setScalar(.001);
@@ -1062,11 +1063,20 @@ function penalise(reason, item){
     tw(.45, EASE.out, (k) => {
       item.node.position.set(home.x + Math.sin(k * 34) * .022 * (1 - k), home.y, home.z);
     });
-    item.inner.traverse(o => { if (o.isMesh){
-      const orig = o.material.color.getHex();
-      o.material.color.setHex(0xff3b3b);
-      setTimeout(() => o.material?.color?.setHex(orig), 260);
-    }});
+    // Several meshes share one material (rice grains, sesame, ginger), and a
+    // second wrong tap can land mid-flash, so remember the true colour once
+    // per material rather than reading back a colour that is already red.
+    const mats = new Set();
+    item.inner.traverse(o => { if (o.isMesh) mats.add(o.material); });
+    mats.forEach(mt => {
+      mt.userData.flashOrig ??= mt.color.getHex();
+      mt.color.setHex(0xff3b3b);
+      clearTimeout(mt.userData.flashTimer);
+      mt.userData.flashTimer = setTimeout(() => {
+        mt.color.setHex(mt.userData.flashOrig);
+        delete mt.userData.flashOrig;
+      }, 260);
+    });
   } else {
     showStatus("⏱️", 'Time ran out');
     setTimeout(() => showStatus(''), 1200);
@@ -1083,6 +1093,7 @@ function startGame(){
   clearPalette(); clearStack();
   [...el.tries.querySelectorAll('.try')].forEach(d => d.classList.remove('gone'));
   el.over.hidden = el.gate.hidden = true;
+  document.body.classList.add('ingame');
   el.score.textContent = '0';
   buildOrder();
   showStatus(S.tracked ? '' : '📷 🃏');
@@ -1234,7 +1245,10 @@ async function startAR(){
   const { MindARThree } = await import('mindar-image-three');
   const mindar = new MindARThree({ container: el.ar, imageTargetSrc: TARGET_SRC,
                                    uiScanning:'no', uiLoading:'no',
-                                   filterMinCF: 3.0, filterBeta: 30,
+                                   // One-euro filter; MindAR measures time in ms, so
+                                   // 0.001 is a 1 Hz cutoff at rest (its default).
+                                   // Values like 1.0 or 3.0 mean 1-3 kHz: no smoothing.
+                                   filterMinCF: 0.001, filterBeta: 1000,
                                    warmupTolerance: 8, missTolerance: 10 });
   const { renderer, scene, camera } = mindar;
   activeCamera = camera;

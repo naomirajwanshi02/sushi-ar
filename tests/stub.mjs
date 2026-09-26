@@ -36,7 +36,9 @@ bag.banner._kids = ['b','span'].map(s=>{ const d=mkEl(s); d._sel=s; return d; })
 
 globalThis.window = globalThis;
 globalThis.location = { search:'' };
-globalThis.navigator = { vibrate(){}, mediaDevices:{ getUserMedia:async()=>({}) } };
+// Node 21+ defines a read-only global navigator, so plain assignment throws.
+Object.defineProperty(globalThis, 'navigator', { configurable:true,
+  value:{ vibrate(){}, mediaDevices:{ getUserMedia:async()=>({}) } } });
 globalThis.devicePixelRatio = 2;
 globalThis.innerWidth = 390; globalThis.innerHeight = 844;
 globalThis.addEventListener = noop;

@@ -36,7 +36,9 @@ bag.banner._kids = ['b','span'].map(s=>{ const d=mkEl(s); d._sel=s; return d; })
 
 globalThis.window = globalThis;
 globalThis.location = { search:'' };
-globalThis.navigator = { vibrate(){}, mediaDevices:{ getUserMedia:async()=>({}) } };
+// Node 21+ defines a read-only global navigator, so plain assignment throws.
+Object.defineProperty(globalThis, 'navigator', { configurable:true,
+  value:{ vibrate(){}, mediaDevices:{ getUserMedia:async()=>({}) } } });
 globalThis.devicePixelRatio = 2;
 globalThis.innerWidth = 390; globalThis.innerHeight = 844;
 globalThis.addEventListener = noop;
@@ -128,8 +130,9 @@ function ellipseRing(n, phase){
 // ------------------------------------------------------------------ DOM
 const $ = (id) => document.getElementById(id);
 const el = {
-  ar:$('ar'), score:$('score'), tries:$('tries'), ticket:$('ticket'),
-  nextCard:$('nextCard'), orderNum:$('orderNum'), bar:$('bar'), barFill:$('barFill'),
+  ar:$('ar'), scanGuide:$('scanGuide'), score:$('score'), tries:$('tries'), ticket:$('ticket'),
+  nextCard:$('nextCard'), orderNum:$('orderNum'), recipeName:$('recipeName'),
+  bar:$('bar'), barFill:$('barFill'),
   progress:$('progress'), status:$('status'), pops:$('pops'), banner:$('banner'),
   flash:$('flash'), dbg:$('dbg'),
   gate:$('gate'), gateHint:$('gateHint'), startBtn:$('startBtn'),
@@ -226,8 +229,12 @@ const GEO = {
 };
 
 // Toon material holds saturation better in AR and matches the watercolor target style
-const std = (color, o = {}) => new THREE.MeshToonMaterial(
-  { color, transparent:true, ...o });
+const std = (color, o = {}) => {
+  const mat = new THREE.MeshToonMaterial({ color, transparent:true, ...o });
+  // Save original emissive state so highlight code can restore it (wasabi has built-in glow)
+  mat.userData.originalEmissiveIntensity = o.emissiveIntensity || 0;
+  return mat;
+};
 
 function m(geo, mat, s, p, r){
   const o = new THREE.Mesh(geo, mat);
@@ -242,16 +249,29 @@ function m(geo, mat, s, p, r){
    colour alone isn't enough. */
 const ING = {
   rice: { name:'Rice', color:0xFFFAF0, build(){
-    const g = new THREE.Group(), mt = std(0xFFFAF0);
-    g.add(m(GEO.ball, mt, [.105,.062,.075], [0,.031,0]));
-    [[-.028,.052,.01],[.026,.055,-.012],[.004,.062,.022]].forEach(p =>
-      g.add(m(GEO.ball, mt, [.032,.026,.03], p)));
+    const g = new THREE.Group();
+    // More distinct rice grains for realism
+    const base = std(0xFFFAF0);
+    const grain = std(0xFFF5E1);
+    g.add(m(GEO.ball, base, [.105,.062,.075], [0,.031,0]));
+    // Visible individual grains on surface
+    [[-.028,.052,.01],[.026,.055,-.012],[.004,.062,.022],
+     [-.015,.058,-.016],[.018,.056,.018],[-.022,.045,.016],
+     [.012,.049,-.018],[-.008,.065,.008],[.020,.050,-.008]].forEach(p =>
+      g.add(m(GEO.ball, grain, [.018,.014,.016], p)));
     return g; } },
 
   nori: { name:'Nori', color:0x2d5f41, build(){
-    const g = new THREE.Group(), mt = std(0x2d5f41);
-    g.add(m(GEO.box, mt, [.115,.008,.115], [0,.006,0]));
-    g.add(m(GEO.box, std(0x1a3d2b), [.118,.004,.03], [0,.012,.034], [0,0,.03]));
+    const g = new THREE.Group();
+    // Base sheet with texture layers
+    g.add(m(GEO.box, std(0x2d5f41), [.115,.008,.115], [0,.006,0]));
+    // Darker veins/texture (seaweed has visible structure)
+    for (let i = 0; i < 4; i++){
+      g.add(m(GEO.box, std(0x1a3d2b), [.118,.001,.006], [0,.012,-.048 + i * .032]));
+      g.add(m(GEO.box, std(0x1a3d2b), [.006,.001,.118], [-.048 + i * .032,.012,0]));
+    }
+    // Slight glossy highlight (nori has a sheen)
+    g.add(m(GEO.box, std(0x3a7050, { opacity:.3 }), [.112,.001,.08], [0,.0145,0]));
     return g; } },
 
   salmon:   { name:'Salmon',   color:0xFF7043, build(){ return slab(0xFF7043, 0xFFCCBC); } },
@@ -266,10 +286,15 @@ const ING = {
 
   avocado: { name:'Avocado', color:0x9CFF57, build(){
     const g = new THREE.Group();
-    for (let i = 0; i < 3; i++)                      // fanned crescent slices
-      g.add(m(GEO.tube, std(0x9CFF57),
-              [.085,.085,.03], [-.018 + i * .018, .03 + i * .004, 0],
-              [Math.PI / 2, 0, .35 + i * .16]));
+    // Fanned crescent slices with inner yellow gradient
+    for (let i = 0; i < 3; i++){
+      const x = -.018 + i * .018, y = .03 + i * .004, rot = .35 + i * .16;
+      // Outer green flesh
+      g.add(m(GEO.tube, std(0x9CFF57), [.085,.085,.03], [x,y,0], [Math.PI / 2, 0, rot]));
+      // Inner lighter green (closer to seed)
+      g.add(m(GEO.tube, std(0xC5FF8A, { opacity:.8 }),
+              [.065,.065,.031], [x,y + .001,0], [Math.PI / 2, 0, rot]));
+    }
     return g; } },
 
   cucumber: { name:'Cucumber', color:0x4AFF88, build(){
@@ -284,10 +309,19 @@ const ING = {
 
   shrimp: { name:'Ebi', color:0xFF9E80, build(){
     const g = new THREE.Group();
-    g.add(m(GEO.tube, std(0xFF9E80), [.09,.09,.05], [0,.035,0],
-            [Math.PI / 2, 0, -.5]));
-    for (let i = 0; i < 3; i++)                      // stripes
-      g.add(m(GEO.box, std(0xFF5722), [.012,.03,.052], [-.025 + i * .025, .045, 0], [0,0,.3]));
+    // Curved segmented body
+    for (let i = 0; i < 5; i++){
+      const t = i / 4;
+      const curve = -.5 - t * .4;  // increasing curve
+      const x = -.032 + i * .016;
+      const y = .035 + Math.sin(t * Math.PI * .5) * .008;
+      const scale = .05 - i * .004;  // tapering
+      g.add(m(GEO.tube, std(i % 2 ? 0xFF9E80 : 0xFFB299),
+              [.09,.09,scale], [x,y,0], [Math.PI / 2, 0, curve]));
+    }
+    // Tail segments (stripes)
+    for (let i = 0; i < 4; i++)
+      g.add(m(GEO.box, std(0xFF5722), [.008,.028,.048], [-.028 + i * .019, .046, 0], [0,0,.35]));
     return g; } },
 
   crab: { name:'Crab', color:0xFF6D00, build(){
@@ -324,10 +358,16 @@ const ING = {
 
 function slab(c, light){
   const g = new THREE.Group();
+  // Main fish body with slight curve for realism
   g.add(m(GEO.ball, std(c), [.11,.028,.07], [0,.02,0]));
-  for (let i = 0; i < 3; i++)                        // marbling
+  // Fat marbling (white streaks)
+  for (let i = 0; i < 4; i++)
     g.add(m(GEO.box, std(light, { opacity:.85 }),
-            [.096,.003,.006], [0,.034,-.018 + i * .018]));
+            [.092 - i * .008,.003,.005], [0,.034,-.021 + i * .014], [0,0,.05 * i]));
+  // Muscle striations (darker lines for texture)
+  for (let i = 0; i < 5; i++)
+    g.add(m(GEO.box, std(c, { emissive:0x000000, emissiveIntensity:.1 }),
+            [.105,.001,.045], [-.003,.035,-.015 + i * .0075]));
   return g;
 }
 
@@ -392,6 +432,20 @@ const buildSpot = new THREE.Group();     // where the sushi assembles
 const paletteRoot = new THREE.Group();
 const fx = new THREE.Group();
 let lockRing, matMesh;
+// Billboard transform reusable objects (allocated once, reused per frame)
+const bb = {
+  tempPos: new THREE.Vector3(),
+  cameraLocalPos: new THREE.Vector3(),
+  stackCenter: new THREE.Vector3(),
+  d: new THREE.Vector3(),
+  tempQuat: new THREE.Quaternion(),
+  boardQuat: new THREE.Quaternion(),
+  localQuat: new THREE.Quaternion(),
+  camUp: new THREE.Vector3(),
+  u: new THREE.Vector3(),
+  localZ: new THREE.Vector3(0, 0, 1),
+  targetQuat: new THREE.Quaternion(),
+};
 {
   // Bright ground color keeps PBR materials vibrant by reflecting light back up
   board.add(new THREE.HemisphereLight(0xffffff, 0xc8e0ff, 2.0));
@@ -451,9 +505,96 @@ function labelSprite(text){
   tex.anisotropy = 4;
   const s = new THREE.Sprite(new THREE.SpriteMaterial(
     { map:tex, transparent:true, depthWrite:false }));
-  s.scale.set(.06, .015, 1);        // much smaller, 50% of original
-  s.visible = false;                 // hidden by default, visual cues take over
+  s.scale.set(.24, .06, 1);          // large, very readable AR labels (2x)
   return s;
+}
+
+/** Draw what the finished dish looks like (goal preview for the player). */
+function drawFinishedDish(recipe, size){
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d'), cx = size / 2, cy = size / 2;
+
+  if (recipe.form === 'nigiri'){
+    // Nigiri: rice base (oval) + topping (rounded rect on top)
+    const topColor = hex(ING[recipe.top].color);
+
+    // Rice base (cream oval)
+    g.fillStyle = hex(ING.rice.color);
+    g.strokeStyle = 'rgba(0,0,0,.2)';
+    g.lineWidth = 2;
+    g.beginPath();
+    g.ellipse(cx, cy + size * .08, size * .32, size * .18, 0, 0, Math.PI * 2);
+    g.fill(); g.stroke();
+
+    // Topping (rounded rect overlay, slightly offset to show rice)
+    g.fillStyle = topColor;
+    g.strokeStyle = 'rgba(0,0,0,.25)';
+    g.lineWidth = 2;
+    g.beginPath();
+    const rx = size * .35, ry = size * .2, r = size * .06, dy = -size * .05;
+    g.moveTo(cx - rx + r, cy - ry + dy);
+    g.arcTo(cx + rx, cy - ry + dy, cx + rx, cy + ry + dy, r);
+    g.arcTo(cx + rx, cy + ry + dy, cx - rx, cy + ry + dy, r);
+    g.arcTo(cx - rx, cy + ry + dy, cx - rx, cy - ry + dy, r);
+    g.arcTo(cx - rx, cy - ry + dy, cx + rx, cy - ry + dy, r);
+    g.closePath();
+    g.fill(); g.stroke();
+
+    // Marbling lines on top
+    g.strokeStyle = 'rgba(255,255,255,.4)';
+    g.lineWidth = 2;
+    for (let i = 0; i < 2; i++){
+      const y = cy - size * .08 + i * size * .08 + dy;
+      g.beginPath();
+      g.moveTo(cx - size * .28, y);
+      g.lineTo(cx + size * .28, y);
+      g.stroke();
+    }
+  } else {
+    // Maki: nori ring (dark) + rice ring (cream) + filling center (colorful)
+    const topColor = hex(ING[recipe.top].color);
+
+    // Nori outer ring (dark green/black circle)
+    g.fillStyle = hex(ING.nori.color);
+    g.strokeStyle = 'rgba(0,0,0,.3)';
+    g.lineWidth = 2;
+    g.beginPath();
+    g.arc(cx, cy, size * .38, 0, Math.PI * 2);
+    g.fill(); g.stroke();
+
+    // Rice ring (cream)
+    g.fillStyle = hex(ING.rice.color);
+    g.strokeStyle = 'rgba(0,0,0,.15)';
+    g.lineWidth = 1.5;
+    g.beginPath();
+    g.arc(cx, cy, size * .30, 0, Math.PI * 2);
+    g.fill(); g.stroke();
+
+    // Center filling (the "top" ingredient color)
+    g.fillStyle = topColor;
+    g.strokeStyle = 'rgba(0,0,0,.2)';
+    g.lineWidth = 1.5;
+    g.beginPath();
+    g.arc(cx, cy, size * .16, 0, Math.PI * 2);
+    g.fill(); g.stroke();
+
+    // Sesame speckle if the recipe has sesame
+    if (recipe.steps.includes('sesame')){
+      g.fillStyle = '#FFF9E6';
+      for (let i = 0; i < 8; i++){
+        const angle = (i / 8) * Math.PI * 2;
+        const dist = size * .24 + (Math.random() - 0.5) * size * .04;
+        const sx = cx + Math.cos(angle) * dist;
+        const sy = cy + Math.sin(angle) * dist;
+        g.beginPath();
+        g.arc(sx, sy, size * .02, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+  }
+
+  return c;
 }
 
 /** Draw a large icon showing ingredient shape + color for the ticket card. */
@@ -558,7 +699,7 @@ function buildOrder(){
     const node = new THREE.Group();
     node.add(tilted(inner));
     const lab = labelSprite(ING[key].name);
-    lab.position.set(0, 0, .075);
+    lab.position.set(0, -.085, .01);   // just below the model on the card, not lifted toward the camera
     node.add(lab);
     node.position.set(pts[i][0], pts[i][1], LIFT);
     node.scale.setScalar(.001);
@@ -591,22 +732,24 @@ function clearStack(){
 
 function renderTicket(){
   el.orderNum.textContent = `ORDER #${S.served + 1}`;
+  el.recipeName.textContent = S.recipe.name;
 
-  // Draw large icon of the NEXT needed ingredient
-  const key = S.recipe.steps[S.step];
-  const canvas = drawIngredientIcon(key, 120);
+  // Draw the finished dish preview (goal)
+  const canvas = drawFinishedDish(S.recipe, 140);
   el.nextCard.innerHTML = '';
   el.nextCard.appendChild(canvas);
-  const label = document.createElement('div');
-  label.className = 'label';
-  label.textContent = ING[key].name;
-  el.nextCard.appendChild(label);
 
-  // Progress dots: filled for done, outlined for pending, pulsing for current
+  // Progress: filled dots for done, outlined for pending, text name for current
   el.progress.innerHTML = S.recipe.steps.map((k, i) => {
-    const cls = i < S.step ? 'dot done' : i === S.step ? 'dot now' : 'dot';
-    const bg = i < S.step ? hex(ING[k].color) : 'transparent';
-    return `<div class="${cls}" style="background:${bg}${i < S.step ? ';border-color:transparent' : ''}"></div>`;
+    if (i === S.step){
+      // Current step: show ingredient name as pulsing text
+      return `<div class="dot now">${ING[k].name}</div>`;
+    } else {
+      // Done or pending: show dot
+      const cls = i < S.step ? 'dot done' : 'dot';
+      const bg = i < S.step ? hex(ING[k].color) : 'transparent';
+      return `<div class="${cls}" style="background:${bg}${i < S.step ? ';border-color:transparent' : ''}"></div>`;
+    }
   }).join('');
 }
 
@@ -638,6 +781,7 @@ function sparkle(at, color){
       p.scale.setScalar(.012 * (1 - k * .5));
     }, () => { p.material.dispose(); fx.remove(p); });
   }
+  mt.dispose();  // Dispose base material after clones are made
 }
 
 /** Correct pick: fly the ingredient into the build stack. */
@@ -737,11 +881,20 @@ function penalise(reason, item){
     tw(.45, EASE.out, (k) => {
       item.node.position.set(home.x + Math.sin(k * 34) * .022 * (1 - k), home.y, home.z);
     });
-    item.inner.traverse(o => { if (o.isMesh){
-      const orig = o.material.color.getHex();
-      o.material.color.setHex(0xff3b3b);
-      setTimeout(() => o.material?.color?.setHex(orig), 260);
-    }});
+    // Several meshes share one material (rice grains, sesame, ginger), and a
+    // second wrong tap can land mid-flash, so remember the true colour once
+    // per material rather than reading back a colour that is already red.
+    const mats = new Set();
+    item.inner.traverse(o => { if (o.isMesh) mats.add(o.material); });
+    mats.forEach(mt => {
+      mt.userData.flashOrig ??= mt.color.getHex();
+      mt.color.setHex(0xff3b3b);
+      clearTimeout(mt.userData.flashTimer);
+      mt.userData.flashTimer = setTimeout(() => {
+        mt.color.setHex(mt.userData.flashOrig);
+        delete mt.userData.flashOrig;
+      }, 260);
+    });
   } else {
     showStatus("⏱️", 'Time ran out');
     setTimeout(() => showStatus(''), 1200);
@@ -758,9 +911,11 @@ function startGame(){
   clearPalette(); clearStack();
   [...el.tries.querySelectorAll('.try')].forEach(d => d.classList.remove('gone'));
   el.over.hidden = el.gate.hidden = true;
+  document.body.classList.add('ingame');
   el.score.textContent = '0';
   buildOrder();
-  showStatus(S.tracked ? '' : '📷', S.tracked ? '' : 'Find the card');
+  showStatus(S.tracked ? '' : '📷 🃏');
+  el.scanGuide.classList.toggle('on', !S.tracked);
 }
 
 function gameOver(why){
@@ -801,46 +956,54 @@ function update(dt){
       it.node.scale.setScalar(0.95 + 0.15 * pulse);
       it.inner.traverse(o => {
         if (o.isMesh){
-          o.material.emissive.set(ING[needKey].color);
-          o.material.emissiveIntensity = 0.3 * pulse;
+          const original = o.material.userData.originalEmissiveIntensity || 0;
+          // Preserve original emissive color if it exists (wasabi), else use ingredient color
+          if (original > 0) {
+            // Has built-in glow (wasabi) — boost its intensity, keep its color
+            o.material.emissiveIntensity = original + 0.3 * pulse;
+          } else {
+            // No built-in glow — pulse with ingredient color
+            o.material.emissive.set(ING[needKey].color);
+            o.material.emissiveIntensity = 0.3 * pulse;
+          }
         }
       });
     } else if (it.alive){
-      // Reset non-highlighted items
+      // Reset non-highlighted items to their original emissive state
       it.node.scale.setScalar(1);
       it.inner.traverse(o => {
-        if (o.isMesh) o.material.emissiveIntensity = 0;
+        if (o.isMesh) {
+          o.material.emissiveIntensity = o.material.userData.originalEmissiveIntensity || 0;
+        }
       });
     }
   });
 
   // Billboard transform: orient buildSpot so stacked layers are visible edge-on and
   // aligned vertically on screen, rather than colinear with the view (invisible).
+  // Reuses pre-allocated objects from bb to avoid per-frame GC pressure.
   if (activeCamera && S.stack.length > 1) {
-    const tempPos = new THREE.Vector3();
-    activeCamera.getWorldPosition(tempPos);
-    const cameraLocalPos = board.worldToLocal(tempPos.clone());
-    const stackCenter = new THREE.Vector3(0, 0, LIFT + .014 + (S.stack.length - 1) * .026 / 2);
-    const d = new THREE.Vector3().subVectors(cameraLocalPos, stackCenter);
-    const distSq = d.lengthSq();
+    activeCamera.getWorldPosition(bb.tempPos);
+    bb.cameraLocalPos.copy(bb.tempPos);
+    board.worldToLocal(bb.cameraLocalPos);
+    bb.stackCenter.set(0, 0, LIFT + .014 + (S.stack.length - 1) * .026 / 2);
+    bb.d.subVectors(bb.cameraLocalPos, bb.stackCenter);
+    const distSq = bb.d.lengthSq();
     if (distSq >= 0.0001) {
-      d.normalize();
-      const tempQuat = new THREE.Quaternion();
-      activeCamera.getWorldQuaternion(tempQuat);
-      const boardQuat = new THREE.Quaternion();
-      board.getWorldQuaternion(boardQuat);
-      const localQuat = boardQuat.clone().invert().multiply(tempQuat);
-      const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(localQuat);
-      const dot = camUp.dot(d);
-      const u = camUp.clone().addScaledVector(d, -dot);
-      if (u.lengthSq() < 0.0001) {
-        u.set(camUp.x, camUp.y, 0);
-        if (u.lengthSq() < 0.0001) u.set(0, 1, 0);
+      bb.d.normalize();
+      activeCamera.getWorldQuaternion(bb.tempQuat);
+      board.getWorldQuaternion(bb.boardQuat);
+      bb.localQuat.copy(bb.boardQuat).invert().multiply(bb.tempQuat);
+      bb.camUp.set(0, 1, 0).applyQuaternion(bb.localQuat);
+      const dot = bb.camUp.dot(bb.d);
+      bb.u.copy(bb.camUp).addScaledVector(bb.d, -dot);
+      if (bb.u.lengthSq() < 0.0001) {
+        bb.u.set(bb.camUp.x, bb.camUp.y, 0);
+        if (bb.u.lengthSq() < 0.0001) bb.u.set(0, 1, 0);
       }
-      u.normalize();
-      const localZ = new THREE.Vector3(0, 0, 1);
-      const targetQuat = new THREE.Quaternion().setFromUnitVectors(localZ, u);
-      buildSpot.quaternion.slerp(targetQuat, 0.12);
+      bb.u.normalize();
+      bb.targetQuat.setFromUnitVectors(bb.localZ, bb.u);
+      buildSpot.quaternion.slerp(bb.targetQuat, 0.12);
     }
   }
 
@@ -900,16 +1063,30 @@ async function startAR(){
   const { MindARThree } = await import('mindar-image-three');
   const mindar = new MindARThree({ container: el.ar, imageTargetSrc: TARGET_SRC,
                                    uiScanning:'no', uiLoading:'no',
-                                   filterMinCF: 1.0, filterBeta: 50,
+                                   // One-euro filter; MindAR measures time in ms, so
+                                   // 0.001 is a 1 Hz cutoff at rest (its default).
+                                   // Values like 1.0 or 3.0 mean 1-3 kHz: no smoothing.
+                                   filterMinCF: 0.001, filterBeta: 1000,
                                    warmupTolerance: 8, missTolerance: 10 });
   const { renderer, scene, camera } = mindar;
   activeCamera = camera;
   const anchor = mindar.addAnchor(0);
   anchor.group.add(board);
-  anchor.onTargetFound = () => { S.tracked = true; showStatus(''); };
-  anchor.onTargetLost  = () => { S.tracked = false;
-    if (S.phase === 'playing') showStatus('📷', 'Find the card'); };
+  anchor.onTargetFound = () => {
+    S.tracked = true;
+    showStatus('');
+    el.scanGuide.classList.remove('on');
+    if (S.phase === 'idle') showMenu();       // first lock-on: reveal the main page
+  };
+  anchor.onTargetLost  = () => {
+    S.tracked = false;
+    if (S.phase === 'playing'){
+      showStatus('📷 🃏');
+      el.scanGuide.classList.add('on');
+    }
+  };
   await mindar.start();
+  if (!S.tracked) el.scanGuide.classList.add('on');  // Show scanning guide until the target locks
 
   /* MindAR normalises anchor space to the target image's WIDTH (see the
      postMatrix it builds from markerDimensions), so the card's height is
@@ -978,22 +1155,25 @@ async function startDemo(){
 }
 
 // ---------------------------------------------------------------- boot
+/* Flow: page opens -> camera viewfinder (scan the sushi picture) -> first
+   lock-on shows the main page -> Start begins the game. Demo mode has nothing
+   to scan, so it shows the main page as soon as the camera is up. */
+function showMenu(){
+  showStatus('');
+  el.gate.hidden = false;
+}
+
 let booted = false;
 async function boot(){
   if (booted) return;
   booted = true;
-  Sfx.unlock();
   el.gate.hidden = true;
   el.dbg.hidden = !DEBUG;
-  showStatus('Starting camera…');
+  showStatus('📷');
   try {
     if (DEMO) await startDemo(); else await startAR();
     showStatus('');
-    startGame();
-    if (DEMO){
-      showStatus('Nothing to scan', 'Demo mode — the board is in front of you');
-      setTimeout(() => showStatus(''), 2400);
-    }
+    if (DEMO || S.tracked) showMenu();
   } catch (e){
     booted = false;
     fail(/NotAllowedError|Permission/i.test(String(e))
@@ -1005,12 +1185,14 @@ async function boot(){
   }
 }
 
-el.startBtn.addEventListener('click', boot);
+// Audio can only be unlocked from a tap, so it waits for Start rather than boot.
+el.startBtn.addEventListener('click', () => { Sfx.unlock(); el.gate.hidden = true; startGame(); });
 el.againBtn.addEventListener('click', () => { Sfx.unlock(); startGame(); });
-el.retryBtn.addEventListener('click', () => { el.err.hidden = true; el.gate.hidden = false; });
+el.retryBtn.addEventListener('click', () => { el.err.hidden = true; booted ? showMenu() : boot(); });
 if (DEMO) el.gateHint.innerHTML =
   'Demo mode — no image target needed. Remove <code>?demo=1</code> once you have printed the target.';
 window.addEventListener('error', e => fail(e.error || e.message));
 window.addEventListener('unhandledrejection', e => fail(e.reason));
+window.addEventListener('load', boot);        // open the viewfinder straight away
 
 export { S, ING, RECIPES, update, startGame, buildOrder, acceptItem, penalise, board, paletteRoot, buildSpot, tweens, gameOver, RING, FIT, applyTargetAspect, relayout, ellipseRing, lockRing, matMesh };

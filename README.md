@@ -141,7 +141,7 @@ The game is one HTML file, so `tools/mktest.mjs` extracts the module, fronts it
 with a browser stub and exports the internals. Then:
 
 ```sh
-npm install three@0.160.0 mind-ar@1.2.5 canvas
+npm install three@0.160.0 mind-ar@1.2.5
 tests/run.sh
 ```
 
