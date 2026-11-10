@@ -299,7 +299,7 @@ export function setTokens(ids){
     R.content.add(node);
     const label = document.createElement('div');
     label.className = 'tlabel';
-    label.innerHTML = `${INGREDIENTS[id].short}<small>${INGREDIENTS[id].jp}</small>`;
+    label.textContent = INGREDIENTS[id].short;
     R.labels.appendChild(label);
     const tk = { id, node, model, hit, ring, label, baseY, spin, phase: i * 1.3, alive: true, out: Math.sign(pts[i][1]) || 1 };
     hit.userData.token = tk;

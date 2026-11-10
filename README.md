@@ -11,7 +11,7 @@ a sushi chef does, step by step, against the clock. Made for ages 8+.
 ## How to play
 
 1. Open the link. It goes straight to the camera viewfinder. Point it at the card.
-2. When the card is found, a red 寿 stamp says *Found it!* and the welcome card explains the game.
+2. When the card is found, a red stamp says *Found it!* and a short welcome explains the game.
    Tap **Let's cook!**
 3. An **order** comes in, such as *California Roll*. Ingredients wait on little glazed dishes round
    the board. Tap them in the **chef's order**; the piece builds up in the middle of the board.
@@ -20,7 +20,7 @@ a sushi chef does, step by step, against the clock. Made for ages 8+.
 
 **The card is only needed to start.** While the card is in view the board sits on it. Point the
 phone away and the board glides to a resting place in front of the camera, so the game carries on.
-Bring the card back and the board settles onto it again. A pill at the bottom says which it is.
+Bring the card back and the board settles onto it again.
 
 ## The rules, and why the points add up
 
@@ -54,16 +54,16 @@ After 6 s without progress, the ingredients you need start to hop.
 
 | Piece | Kind | Built in this order |
 |---|---|---|
-| Salmon Nigiri | nigiri 握り | rice → wasabi → salmon |
+| Salmon Nigiri | nigiri | rice → wasabi → salmon |
 | Tuna Nigiri | nigiri | rice → wasabi → tuna |
 | Ebi Nigiri | nigiri | rice → wasabi → shrimp |
 | Tamago Nigiri | nigiri | rice → tamago → nori belt |
-| Ikura Gunkan | gunkan 軍艦 | rice → nori wall → salmon roe |
-| Kappa Maki | hosomaki 細巻き | nori → rice → cucumber |
+| Ikura Gunkan | gunkan | rice → nori wall → salmon roe |
+| Kappa Maki | hosomaki | nori → rice → cucumber |
 | Salmon Maki | hosomaki | nori → rice → salmon |
 | Tekka Maki | hosomaki | nori → rice → wasabi → tuna |
-| Futomaki | futomaki 太巻き | nori → rice → tamago, cucumber, crab (any order) |
-| California Roll | uramaki 裏巻き | nori → rice → crab, avocado, cucumber (any order) → sesame |
+| Futomaki | futomaki | nori → rice → tamago, cucumber, crab (any order) |
+| California Roll | uramaki | nori → rice → crab, avocado, cucumber (any order) → sesame |
 | Salmon Avocado Roll | uramaki | nori → rice → salmon, avocado (any order) → sesame |
 
 13 ingredients: sushi rice, nori, wasabi, salmon, tuna, shrimp, tamago, salmon roe, crab stick,
@@ -90,11 +90,10 @@ Nothing is downloaded: every model is built in code at real size (1 unit = 1 cm)
 ## Design: the Anatomy kit in sepia
 
 The interface uses the [Anatomy](https://github.com/wheresryan22/anatomy) skill (MIT) in the same
-sepia theme as **Noh_Masks** and **Ramen_Builder**: Anatomy plates with a mono `Fig. 0n` label
-top-left and a title top-right, warm paper and walnut ink tokens
+sepia theme as **Noh_Masks** and **Ramen_Builder**: Anatomy plates, warm paper and walnut ink tokens
 ([`css/anatomy-sepia.css`](css/anatomy-sepia.css)), Zen Maru Gothic, red pill buttons, the corner
-viewfinder with its red sweep, a red stamp when the card is found, a rolling score that locks with a
-click. The kit's stylesheet is in [`vendor/anatomy/`](vendor/anatomy).
+viewfinder with its red sweep, a red stamp when the card is found, and a rolling score that locks
+when points land. The screens carry no extra labels, no Japanese script and no sound. The kit's stylesheet is in [`vendor/anatomy/`](vendor/anatomy).
 
 **Works on any screen and in any browser.** When the card leaves the view, the floating board measures
 the space the HUD leaves free and fits itself and its labels into it: below the HUD on a portrait
@@ -109,7 +108,7 @@ with a button that copies the link.
 | File | What it is |
 |---|---|
 | `index.html` | The screens: viewfinder, welcome, HUD, pause, game over. |
-| `js/app.js` | The flow and the HUD: scan → welcome → orders, score, combo, lives, sound. |
+| `js/app.js` | The flow and the HUD: scan → welcome → orders, score, combo, lives. |
 | `js/rules.js` | The rules as plain logic: orders, stages, scoring, clock, lives. Tested in node. |
 | `js/data.js` | Ingredients, recipes, facts and the difficulty ramp. |
 | `js/stage.js` | The 3D board: card tracking with the float-away fallback, dishes, building, serving, taps. |

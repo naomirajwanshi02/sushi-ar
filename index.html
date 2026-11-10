@@ -32,7 +32,7 @@
 
 <!-- ============ 1 · VIEWFINDER: the page opens straight into it ============ -->
 <div id="guide" class="overlay on">
-  <div class="scan-top plate"><b>Point your camera at the sushi card</b><span class="cap">The sushi bar opens as soon as it's found</span></div>
+  <div class="scan-top plate"><b>Point your camera at the sushi card</b></div>
   <div class="frame"><i></i><i></i><i></i><i></i><div class="sweep"></div></div>
   <div class="scan-bottom">
     <div class="status" id="scanStatus">Starting camera…</div>
@@ -45,26 +45,16 @@
   </div>
 </div>
 
-<div id="found" class="overlay"><div class="plate badge"><div class="stamp">寿</div><b>Found it!</b><span>The sushi bar is open</span></div></div>
+<div id="found" class="overlay"><div class="plate badge"><div class="stamp"><svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><b>Found it!</b></div></div>
 
 <!-- ============ 2 · WELCOME ============ -->
 <section id="intro" class="screen dim">
   <div class="col center">
     <div class="plate welcome">
-      <span class="corner tl">Fig. 01</span><span class="corner tr">Sushi · 寿司</span>
       <img class="hero-dish" id="heroDish" alt="">
       <h1>Sushi Chef</h1>
-      <div class="kana">すしシェフ</div>
-      <p>Orders come in. Build each piece the way a real sushi chef does, <b>step by step</b>, before the customer runs out of patience.</p>
-      <ol class="steps">
-        <li><b>1</b><span>Read the <b>order</b> at the top</span></li>
-        <li><b>2</b><span>Tap ingredients in the <b>chef's order</b></span></li>
-        <li><b>3</b><span>Finish before the <b>clock</b> runs out</span></li>
-        <li><b>4</b><span>Serve as many <b>plates</b> as you can</span></li>
-      </ol>
-      <p class="small">You only need the card to start. After that you can move your phone freely: the board stays with you.</p>
+      <p>An order appears at the top of the screen. Tap the ingredients on the board in the right order to build it, and finish before the clock runs out. Serve as many plates as you can.</p>
       <button class="btn red" id="goBtn">Let's cook!</button>
-      <span class="corner bl">ages 8+</span><span class="corner br" id="introCount">11 pieces</span>
     </div>
   </div>
 </section>
@@ -83,11 +73,11 @@
     </div>
 
     <div class="plate ordercard" id="order">
-      <span class="corner tl" id="ordNo">Order 01</span><span class="corner tr" id="ordForm"></span>
+      <span class="corner tl" id="ordNo">Order 01</span>
       <div class="ordmain">
         <img class="ordpic" id="ordPic" alt="">
         <div class="ordtext">
-          <div class="name"><span id="ordName"></span><span class="jp" id="ordJp"></span></div>
+          <div class="name" id="ordName"></div>
           <div class="hint" id="hint"></div>
         </div>
         <div class="ordread mono" id="ordRead">0/0</div>
@@ -96,17 +86,14 @@
       <div class="timer" id="timer"><b id="timerBar"></b></div>
     </div>
   </div>
-  <div class="trackpill" id="trackPill"><i></i><span id="trackText">On the card</span></div>
 </div>
 
 <!-- ============ PAUSE ============ -->
 <section id="pause" class="screen dim">
   <div class="col center">
     <div class="plate panel">
-      <span class="corner tl">Fig. 02</span><span class="corner tr">Break</span>
       <h2>Paused</h2>
       <button class="btn red" id="resumeBtn">Keep cooking</button>
-      <button class="btn ghost" id="soundBtn">Sound: on</button>
       <button class="btn ghost" id="quitBtn">End game</button>
     </div>
   </div>
@@ -116,8 +103,6 @@
 <section id="over" class="screen dim">
   <div class="col center">
     <div class="plate final">
-      <span class="corner tl">Fig. 99</span><span class="corner tr">Results</span>
-      <span class="corner bl" id="overPlates">0 plates</span><span class="corner br" id="overBest">best 0</span>
       <h2>Game over</h2>
       <div class="cap">Final score</div>
       <div class="bignum" id="finalScore">0</div>
@@ -125,7 +110,7 @@
       <div class="stats">
         <div><b id="stPlates">0</b><span>plates</span></div>
         <div><b id="stStreak">0</b><span>perfect streak</span></div>
-        <div><b id="stMult">×1</b><span>top multi</span></div>
+        <div><b id="stBest">0</b><span>best score</span></div>
       </div>
       <div class="learned" id="learned"></div>
       <div class="made" id="made"></div>
