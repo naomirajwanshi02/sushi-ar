@@ -80,13 +80,6 @@ function tagAt({ x, y }, text, cls = ''){
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 1050);
 }
-function toast(html, ms = 4200){
-  const t = $('toast');
-  t.innerHTML = html;
-  t.classList.add('on');
-  clearTimeout(toast.t);
-  toast.t = setTimeout(() => t.classList.remove('on'), ms);
-}
 function flyPoints(points, done){
   const from = Stage.plateScreen();
   const to = $('odo').getBoundingClientRect();
@@ -149,7 +142,6 @@ function onPick(id){
   Stage.accept(id);
   Stage.hint(null);
   buzz(12);
-  tagAt(at, `+10 ${INGREDIENTS[id].short}`, 'good');
   showScore(shown + 10);
   renderTicket();
   if (res.done) setTimeout(serve, 450);
@@ -160,7 +152,6 @@ async function serve(){
   const out = G.serve();
   buzz([20, 40, 20]);
   popup(out.perfect ? 'Perfect plate!' : 'Order up!', 'big', 0.36);
-  toast(`<b>${r.name}</b> — ${r.fact}`);
   flyPoints(out.total, () => showScore(G.score, true));
   renderMult(out.bumped);
   if (out.bumped) setTimeout(() => { popup(`${G.streak} perfect in a row!  ×${out.mult}`, 'mid', 0.5); }, 600);

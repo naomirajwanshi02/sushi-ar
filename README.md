@@ -16,7 +16,7 @@ a sushi chef does, step by step, against the clock. Made for ages 8+.
 3. An **order** comes in, such as *California Roll*. Ingredients wait on little glazed dishes round
    the board. Tap them in the **chef's order**; the piece builds up in the middle of the board.
 4. When every ingredient is in, the plate is **served**: a pair of nigiri, or the roll cut into six.
-   You learn a fact about that piece, and the next order arrives.
+   Then the next order arrives.
 
 **The card is only needed to start.** While the card is in view the board sits on it. Point the
 phone away and the board glides to a resting place in front of the camera, so the game carries on.
@@ -95,6 +95,11 @@ sepia theme as **Noh_Masks** and **Ramen_Builder**: Anatomy plates, warm paper a
 viewfinder with its red sweep, a red stamp when the card is found, and a rolling score that locks
 when points land. The screens carry no extra labels, no Japanese script and no sound. The kit's stylesheet is in [`vendor/anatomy/`](vendor/anatomy).
 
+**Nothing overlaps.** Dishes run round a rounded rectangle inside the board edge, with at least
+half a centimetre of clear board between dishes, the board edge and the middle where the piece is
+built. Ingredients are kept low so they don't hide what's behind them, and each name label sits on
+its own dish's rim.
+
 **Works on any screen and in any browser.** When the card leaves the view, the floating board measures
 the space the HUD leaves free and fits itself and its labels into it: below the HUD on a portrait
 phone, beside it when the HUD becomes a left-hand column in landscape, and centred on tablets and
@@ -117,7 +122,9 @@ with a button that copies the link.
 | `css/` + `vendor/anatomy/` | The sepia theme and the layout. |
 | `sushi_main.jpeg` / `targets.mind` | The card and its compiled MindAR data (1,877 detection points). |
 | `target.png` / `target_card.mind` | A square backup card: `?target=./target_card.mind`. |
-| `tests/rules.test.mjs` | 43 checks of the rules. Run `sh tests/run.sh` (node only). |
+| `js/layout.js` | Where the dishes and the piece in the middle sit on the board. |
+| `tests/` | `sh tests/run.sh` (node only): 43 checks of the rules, and checks that dishes never overlap each other, the board edge or the middle. |
+| `tools/layout-check.html` | Measures the real 3D models in a browser: every piece fits the middle, every ingredient stays on its dish. |
 | `tools/` | The model sheet, and scripts to compile a new card. |
 
 ## Printing the card
