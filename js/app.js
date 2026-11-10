@@ -37,7 +37,6 @@ const sound = {
   serve(){ [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.14, 'triangle', 0.12, 0, i * 0.07)); },
   combo(m){ [0, 1, 2].forEach((i) => this.tone(600 + m * 90 + i * 140, 0.08, 'sine', 0.1, 0, i * 0.05)); },
   lose(){ [392, 330, 262].forEach((f, i) => this.tone(f, 0.2, 'triangle', 0.12, 0, i * 0.12)); },
-  stamp(){ this.tone(90, 0.25, 'sine', 0.3, -40); this.tone(300, 0.05, 'square', 0.06); },
 };
 const buzz = (ms) => { try { navigator.vibrate?.(ms); } catch { /* unsupported */ } };
 
@@ -156,6 +155,7 @@ function renderTicket(){
   $('hint').innerHTML = G.done() ? 'Order up!'
     : want.length > 1 ? `Any order: <b>${want.map((id) => INGREDIENTS[id].short).join(' · ')}</b>`
     : `Tap the <b>${INGREDIENTS[want[0]].short}</b>`;
+  requestAnimationFrame(layoutFree);
 }
 
 // ------------------------------------------------------------ picking
@@ -187,10 +187,7 @@ async function serve(){
   const out = G.serve();
   sound.serve(); buzz([20, 40, 20]);
   popup(out.perfect ? 'Perfect plate!' : 'Order up!', 'big', 0.36);
-  const p = out.parts;
-  // say exactly where the points came from
-  const sum = `${p.plate} plate + ${p.speed} speed${p.perfect ? ' + 50 perfect' : ''}${p.mult > 1 ? ` × ${p.mult}` : ''} = <b>${out.total}</b>`;
-  toast(`<b>${r.name}</b> — ${r.fact}<br><span class="cap">${sum}</span>`);
+  toast(`<b>${r.name}</b> — ${r.fact}`);
   flyPoints(out.total, () => showScore(G.score, true));
   renderMult(out.bumped);
   if (out.bumped) setTimeout(() => { sound.combo(out.mult); popup(`${G.streak} perfect in a row!  ×${out.mult}`, 'mid', 0.5); }, 600);
@@ -228,9 +225,22 @@ function loop(t){
 }
 
 // ------------------------------------------------------------ flow
+// Browsers built into other apps (Instagram, WhatsApp, Facebook, TikTok…) often refuse the
+// camera. Spot them, and say how to open the page in the phone's real browser.
+const IN_APP = /FBAN|FBAV|FB_IAB|Instagram|WhatsApp|Line\/|Snapchat|TikTok|musical_ly|BytedanceWebview|LinkedInApp|Twitter|Pinterest|; wv\)/i.test(navigator.userAgent);
+const OPEN_IN_BROWSER = 'Tap the ⋯ or share menu and choose “Open in Safari” or “Open in Chrome”.';
+function noCamera(text){
+  $('scanStatus').textContent = text;
+  $('scanRetry').hidden = false;
+  $('copyLink').hidden = !IN_APP;
+}
 async function openScan(){
   overlay('guide', true);
   $('scanRetry').hidden = true;
+  if (!DEMO && (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia)){
+    return noCamera(IN_APP ? `This app's browser can't use the camera. ${OPEN_IN_BROWSER}`
+      : 'This browser can’t use the camera here. Open the page in Safari or Chrome.');
+  }
   try {
     await Stage.start($('ar'), {
       demo: DEMO,
@@ -240,11 +250,11 @@ async function openScan(){
   } catch (err){
     console.error(err);
     const msg = String(err?.message || err?.name || err || '');
-    $('scanStatus').textContent = /NotAllowed|Permission/i.test(msg)
+    noCamera(IN_APP ? `This app's browser didn't let the game use the camera. ${OPEN_IN_BROWSER}`
+      : /NotAllowed|Permission/i.test(msg)
       ? 'The camera was blocked. Tap the “aA” or lock icon next to the address, allow the camera, then tap Try again.'
       : /mind|fetch|404/i.test(msg) ? `Could not load the card data (${msg}).`
-      : 'The camera did not start. Close other apps that use it and tap Try again.';
-    $('scanRetry').hidden = false;
+      : 'The camera did not start. Close other apps that use it and tap Try again.');
   }
 }
 function onFound(){
@@ -273,6 +283,7 @@ function startGame(){
   show(null);
   overlay('hud', true);
   onTrack(DEMO ? false : Stage.onCard());
+  requestAnimationFrame(layoutFree);
   newOrder();
 }
 function pause(){ if (!UI.started) return; UI.paused = true; $('soundBtn').textContent = `Sound: ${sound.on ? 'on' : 'off'}`; show('pause'); }
@@ -294,9 +305,8 @@ function gameOver(){
   const made = RECIPES.filter((r) => G.learned.has(r.id));
   $('learned').textContent = made.length ? `You made ${made.length} different piece${made.length === 1 ? '' : 's'} of sushi:` : 'Every chef starts somewhere. Try again!';
   $('made').innerHTML = made.map((r) => `<img src="${Stage.plateIcon(r)}" alt="${r.name}" title="${r.name}">`).join('');
-  $('newBest').classList.remove('on'); $('hanko').classList.remove('on');
+  $('newBest').classList.remove('on');
   show('over');
-  setTimeout(() => { $('hanko').classList.add('on'); sound.stamp(); buzz(30); }, 450);
   if (isBest) setTimeout(() => { $('newBest').classList.add('on'); sound.combo(5); }, 800);
 }
 
@@ -317,6 +327,29 @@ const fromTracker = (s) => /mind-?ar/i.test(String(s));
 addEventListener('error', (e) => { const s = e.error?.stack || e.message; if (fromTracker(s + e.filename)) return; $('errText').textContent = String(s); $('err').hidden = false; });
 addEventListener('unhandledrejection', (e) => { const s = e.reason?.stack || e.reason; if (fromTracker(s)) return; $('errText').textContent = String(s); $('err').hidden = false; });
 
-window.__sushi = { G, Stage, startGame, onPick };
+// The floating board fits whatever space the HUD leaves: below it on a portrait screen,
+// beside it when the HUD becomes a side column in landscape.
+function layoutFree(){
+  const W = innerWidth, H = innerHeight;
+  const hud = $('hud').classList.contains('on') ? document.querySelector('.hudstack').getBoundingClientRect() : null;
+  const pill = $('trackPill').getBoundingClientRect();
+  let left = 0, top = 0, right = W, bottom = pill.height ? pill.top : H;
+  if (hud && hud.height){
+    if (hud.width < W * 0.6 && hud.right < W * 0.6){ left = hud.right; bottom = H; } // side column
+    else top = hud.bottom;
+  }
+  Stage.setFreeArea({ left, top, right, bottom });
+}
+addEventListener('resize', () => requestAnimationFrame(layoutFree));
+addEventListener('orientationchange', () => setTimeout(layoutFree, 300));
+if ('ResizeObserver' in window) new ResizeObserver(() => layoutFree()).observe(document.querySelector('.hudstack'));
+
+$('copyLink').addEventListener('click', async () => {
+  const url = location.href.split('?')[0];
+  try { await navigator.clipboard.writeText(url); $('copyLink').textContent = 'Link copied'; }
+  catch { prompt('Copy this link and open it in Safari or Chrome:', url); }
+});
+
+window.__sushi = { G, Stage, startGame, onPick, layoutFree };
 requestAnimationFrame(loop);
 openScan();

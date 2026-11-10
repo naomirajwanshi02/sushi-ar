@@ -161,20 +161,55 @@ export function stop(){
 const _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
 const _p2 = new THREE.Vector3(), _q2 = new THREE.Quaternion(), _s2 = new THREE.Vector3();
 const _e = new THREE.Euler();
-// Floating: in front of the camera, tilted back like a board on a table, sized to fit
-// the screen below the order card.
-function floatPose(t){
+// Floating: in front of the camera, tilted back like a board on a table. It is fitted
+// into the part of the screen the HUD leaves free (set by the app with setFreeArea), so
+// the whole board and its labels stay in view on any phone, tablet or desktop, in
+// portrait or landscape.
+const FREE = { l: 0, t: 0.3, r: 1, b: 0.94 };   // fractions of the viewport
+const TILT = THREE.MathUtils.degToRad(52);
+// Points that must stay on screen, in content space (cm): the board's corners, a little
+// above it for the tallest food, and out to where the dish labels sit.
+const FIT_PTS = [];
+for (const x of [-15.2, 15.2]) for (const z of [-11.4, 11.4]) for (const y of [0, 7.5]) FIT_PTS.push(new THREE.Vector3(x, y, z));
+const _m = new THREE.Matrix4(), _w = new THREE.Vector3();
+let fitKey = '', fit = { s: 1, x: 0, y: 0 };
+
+export function setFreeArea({ left, top, right, bottom }){
+  const W = innerWidth, H = innerHeight, m = 6;
+  FREE.l = Math.max(0, (left + m) / W); FREE.r = Math.min(1, (right - m) / W);
+  FREE.t = Math.max(0, (top + m) / H);  FREE.b = Math.min(1, (bottom - m) / H);
+  if (FREE.r - FREE.l < 0.25){ FREE.l = 0; FREE.r = 1; }   // never squeeze the board to nothing
+  if (FREE.b - FREE.t < 0.25){ FREE.t = 0; FREE.b = 1; }
+}
+function fitFloat(){
   const cam = R.camera, d = R.floatDist;
   const hh = d * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)), hw = hh * cam.aspect;
-  const tilt = THREE.MathUtils.degToRad(52);
-  // the board (1 wide, 2/3 deep) must fit the width and the lower ~55% of the height
-  const s = Math.min(1.84 * hw, (1.1 * hh) / (0.667 * Math.cos(tilt) + 0.12));
+  _q.setFromEuler(_e.set(-TILT, 0, 0));
+  let s = hw, x = 0, y = 0;
+  cam.updateMatrixWorld();
+  for (let it = 0; it < 5; it++){
+    _m.compose(_p.set(x, y, -d), _q, _s.setScalar(s));
+    let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+    for (const p of FIT_PTS){
+      // content (cm, y up) → stage (card units, +Z out): (x, -z, y) / board width
+      _w.set(p.x, -p.z, p.y).multiplyScalar(1 / BOARD.w).applyMatrix4(_m).project(cam);
+      const u = (_w.x + 1) / 2, v = (1 - _w.y) / 2;
+      u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v);
+    }
+    const k = Math.min((FREE.r - FREE.l) / (u1 - u0), (FREE.b - FREE.t) / (v1 - v0));
+    // move the board's on-screen centre onto the free area's centre, then rescale
+    x += ((FREE.l + FREE.r) / 2 - (u0 + u1) / 2) * 2 * hw;
+    y -= ((FREE.t + FREE.b) / 2 - (v0 + v1) / 2) * 2 * hh;
+    s *= Math.min(k, 1.6);
+  }
+  fit = { s, x, y };
+}
+function floatPose(t){
+  const key = `${R.camera.fov.toFixed(3)}|${R.camera.aspect.toFixed(4)}|${FREE.l.toFixed(3)},${FREE.t.toFixed(3)},${FREE.r.toFixed(3)},${FREE.b.toFixed(3)}`;
+  if (key !== fitKey){ fitKey = key; fitFloat(); }
   const sway = R.demo ? 0 : 0.012;
-  _e.set(-tilt + Math.sin(t * 0.6) * sway, Math.sin(t * 0.43) * sway, 0);
-  _q.setFromEuler(_e);
-  _p.set(0, -hh * 0.3, -d);
-  _s.setScalar(s);
-  R.floatM.compose(_p, _q, _s);
+  _q.setFromEuler(_e.set(-TILT + Math.sin(t * 0.6) * sway, Math.sin(t * 0.43) * sway, 0));
+  R.floatM.compose(_p.set(fit.x, fit.y, -R.floatDist), _q, _s.setScalar(fit.s));
 }
 
 function placeStage(dt, t){

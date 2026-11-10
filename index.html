@@ -38,13 +38,14 @@
     <div class="status" id="scanStatus">Starting camera…</div>
     <div class="row">
       <button class="btn ghost small" id="scanRetry" hidden>Try again</button>
+      <button class="btn red small" id="copyLink" hidden>Copy link</button>
       <a class="btn ghost small" href="sushi_main.jpeg" target="_blank" rel="noopener">Get the card</a>
       <a class="btn ghost small" href="?demo=1">No card? Demo</a>
     </div>
   </div>
 </div>
 
-<div id="found" class="overlay"><div class="plate badge"><div class="stamp">寿</div><b>Irasshaimase!</b><span>The sushi bar is open</span></div></div>
+<div id="found" class="overlay"><div class="plate badge"><div class="stamp">寿</div><b>Found it!</b><span>The sushi bar is open</span></div></div>
 
 <!-- ============ 2 · WELCOME ============ -->
 <section id="intro" class="screen dim">
@@ -58,23 +59,11 @@
       <ol class="steps">
         <li><b>1</b><span>Read the <b>order</b> at the top</span></li>
         <li><b>2</b><span>Tap ingredients in the <b>chef's order</b></span></li>
-        <li><b>3</b><span>Serve <b>fast</b> for a speed bonus</span></li>
-        <li><b>4</b><span>No mistakes = a <b>perfect plate</b></span></li>
+        <li><b>3</b><span>Finish before the <b>clock</b> runs out</span></li>
+        <li><b>4</b><span>Serve as many <b>plates</b> as you can</span></li>
       </ol>
       <p class="small">You only need the card to start. After that you can move your phone freely: the board stays with you.</p>
       <button class="btn red" id="goBtn">Let's cook!</button>
-      <div class="rules">
-        <span class="cap">How points work</span>
-        <table>
-          <tr><td>Each right ingredient</td><td class="v">+10</td></tr>
-          <tr><td>Each plate you serve</td><td class="v">+100</td></tr>
-          <tr><td>Speed bonus, for time left on the clock</td><td class="v">up to +150</td></tr>
-          <tr><td>Perfect plate, with no wrong taps</td><td class="v">+50</td></tr>
-          <tr><td>Perfect plates in a row raise the multiplier</td><td class="v">×2 … ×5</td></tr>
-          <tr><td>Wrong tap: time off, multiplier back to ×1</td><td class="v bad">−1.5 s</td></tr>
-          <tr><td>Order runs out of time: the customer leaves</td><td class="v bad">−1 life</td></tr>
-        </table>
-      </div>
       <span class="corner bl">ages 8+</span><span class="corner br" id="introCount">11 pieces</span>
     </div>
   </div>
@@ -127,15 +116,9 @@
 <section id="over" class="screen dim">
   <div class="col center">
     <div class="plate final">
-      <span class="corner tl">Fig. 99</span><span class="corner tr">Closed</span>
+      <span class="corner tl">Fig. 99</span><span class="corner tr">Results</span>
       <span class="corner bl" id="overPlates">0 plates</span><span class="corner br" id="overBest">best 0</span>
-      <svg class="hanko" id="hanko" viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="50" cy="50" r="44" fill="#f6eddb" fill-opacity=".6" stroke="#b5452f" stroke-width="6"/>
-        <circle cx="50" cy="50" r="36" fill="none" stroke="#b5452f" stroke-width="2"/>
-        <text x="50" y="47" text-anchor="middle" font-size="26" font-weight="900" fill="#b5452f" font-family="'Zen Maru Gothic',sans-serif">完</text>
-        <text x="50" y="72" text-anchor="middle" font-size="12" font-weight="900" fill="#b5452f" font-family="ui-monospace,monospace" letter-spacing="1">DONE</text>
-      </svg>
-      <h2>Gochisōsama!</h2>
+      <h2>Game over</h2>
       <div class="cap">Final score</div>
       <div class="bignum" id="finalScore">0</div>
       <div class="newbest" id="newBest">★ NEW BEST ★</div>

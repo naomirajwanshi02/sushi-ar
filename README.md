@@ -11,8 +11,8 @@ a sushi chef does, step by step, against the clock. Made for ages 8+.
 ## How to play
 
 1. Open the link. It goes straight to the camera viewfinder. Point it at the card.
-2. When the card is found, a red 寿 stamp says *Irasshaimase!* and the welcome card explains the game
-   and how points work. Tap **Let's cook!**
+2. When the card is found, a red 寿 stamp says *Found it!* and the welcome card explains the game.
+   Tap **Let's cook!**
 3. An **order** comes in, such as *California Roll*. Ingredients wait on little glazed dishes round
    the board. Tap them in the **chef's order**; the piece builds up in the middle of the board.
 4. When every ingredient is in, the plate is **served**: a pair of nigiri, or the roll cut into six.
@@ -24,8 +24,8 @@ Bring the card back and the board settles onto it again. A pill at the bottom sa
 
 ## The rules, and why the points add up
 
-Every number is a multiple of 10 so a player can follow it. The welcome card shows the same table,
-and every served plate shows its sum (for example `100 plate + 120 speed + 50 perfect × 2 = 540`).
+Every number is a multiple of 10. The game itself doesn't explain the scoring: players just see the
+score roll up. This table is the logic behind it, in [`js/rules.js`](js/rules.js).
 
 | You… | Points |
 |---|---|
@@ -94,7 +94,15 @@ sepia theme as **Noh_Masks** and **Ramen_Builder**: Anatomy plates with a mono `
 top-left and a title top-right, warm paper and walnut ink tokens
 ([`css/anatomy-sepia.css`](css/anatomy-sepia.css)), Zen Maru Gothic, red pill buttons, the corner
 viewfinder with its red sweep, a red stamp when the card is found, a rolling score that locks with a
-click, and a 完 hanko on the final score. The kit's stylesheet is in [`vendor/anatomy/`](vendor/anatomy).
+click. The kit's stylesheet is in [`vendor/anatomy/`](vendor/anatomy).
+
+**Works on any screen and in any browser.** When the card leaves the view, the floating board measures
+the space the HUD leaves free and fits itself and its labels into it: below the HUD on a portrait
+phone, beside it when the HUD becomes a left-hand column in landscape, and centred on tablets and
+desktops. The welcome card's start button stays in view on short screens, and safe areas (notches,
+home bars) are respected. Browsers built into other apps (Instagram, WhatsApp, Facebook, TikTok…)
+often block the camera: the game recognises them and says how to open the page in Safari or Chrome,
+with a button that copies the link.
 
 ## Files
 
