@@ -245,13 +245,13 @@ function gariPetals(n, size = 1){
 // ------------------------------------------------------------------ raw ingredients (on their dishes)
 const RAW = {
   rice(){
-    const m = mound(1.75, 0.95, 1.6, { boxy: 0.05, cut: -0.6, wobble: 0.06 });
+    const m = mound(1.75, 0.72, 1.6, { boxy: 0.05, cut: -0.6, wobble: 0.06 });
     return group(m.mesh, grains(170, (p, n) => m.sample(p, n, -0.4)));
   },
   nori(){
     const g = new THREE.Group();
     for (let i = 0; i < 3; i++){
-      const geo = warp(new THREE.BoxGeometry(3.9, 0.035, 3.9, 10, 1, 10), (v) => { v.y += 0.06 * Math.sin(v.x * 1.3 + i) + (i === 2 ? 0.12 * (v.x / 2) ** 2 : 0); });
+      const geo = warp(new THREE.BoxGeometry(3.1, 0.035, 3.1, 10, 1, 10), (v) => { v.y += 0.06 * Math.sin(v.x * 1.3 + i) + (i === 2 ? 0.12 * (v.x / 2) ** 2 : 0); });
       const s = mesh(geo, 'nori');
       s.position.set(rr(-0.15, 0.15), 0.05 + i * 0.07, rr(-0.15, 0.15));
       s.rotation.y = rr(-0.25, 0.25);
@@ -261,56 +261,57 @@ const RAW = {
   },
   wasabi(){
     const prof = [[0, 0], [1.25, 0], [1.38, 0.2], [1.28, 0.55], [1.0, 0.9], [0.68, 1.2], [0.36, 1.45], [0.14, 1.58], [0, 1.62]].map(([x, y]) => new THREE.Vector2(x, y));
-    const geo = warp(new THREE.LatheGeometry(prof, 48), (v) => {
+    const geo = warp(new THREE.LatheGeometry(prof.map((p) => new THREE.Vector2(p.x, p.y * 0.72)), 48), (v) => {
       const a = Math.atan2(v.z, v.x), k = 1 + 0.08 * Math.sin(a * 3 + v.y * 2.5) + 0.03 * Math.sin(a * 11 + v.y * 7);
       v.x *= k; v.z *= k; v.y += 0.12 * Math.sin(a * 2) * (v.y / 1.6);
     });
     return group(mesh(geo, 'wasabi'));
   },
-  salmon(){ const m = fishSlab('salmon', 4.4, 1.5, 2.5); m.position.y = 0.75; return group(m); },
-  tuna(){ const m = fishSlab('tuna', 4.4, 1.6, 2.5); m.position.y = 0.8; return group(m); },
+  salmon(){ const m = fishSlab('salmon', 4.4, 1.15, 2.5); m.position.y = 0.58; return group(m); },
+  tuna(){ const m = fishSlab('tuna', 4.4, 1.2, 2.5); m.position.y = 0.6; return group(m); },
   ebi(){
     const g = new THREE.Group();
-    for (const [z, r] of [[-0.75, 0.15], [0.75, -0.1]]){
-      const s = mesh(shrimpGeo(4.6, 1.6, 0.28, 0.3), 'ebi');
+    for (const [z, r] of [[-0.6, 0.12], [0.6, -0.08]]){
+      const s = mesh(shrimpGeo(3.9, 1.4, 0.26, 0.26), 'ebi');
       s.position.set(0, 0.18 + (z > 0 ? 0.25 : 0), z); s.rotation.y = r;
       g.add(s);
     }
     return g;
   },
   tamago(){
-    const geo = boxUV(roundedSlab(4.2, 2.0, 2.6, 0.18, 8, 6, 6), { atlas: true });
-    const m = mesh(geo, 'tamago'); m.position.y = 1.0;
+    const geo = boxUV(roundedSlab(4.2, 1.3, 2.6, 0.16, 8, 5, 6), { atlas: true });
+    const m = mesh(geo, 'tamago'); m.position.y = 0.65;
     return group(m);
   },
   ikura(){
     return group(roe(46, (p, i) => {
-      const layer = i < 22 ? 0 : i < 36 ? 1 : i < 43 ? 2 : 3;
-      const rMax = [1.35, 1.0, 0.62, 0.25][layer], a = rr(0, Math.PI * 2), r = Math.sqrt(rand()) * rMax;
-      p.set(Math.cos(a) * r, 0.3 + layer * 0.48, Math.sin(a) * r);
+      const layer = i < 26 ? 0 : i < 42 ? 1 : 2;
+      const rMax = [1.45, 1.05, 0.55][layer], a = rr(0, Math.PI * 2), r = Math.sqrt(rand()) * rMax;
+      p.set(Math.cos(a) * r, 0.3 + layer * 0.42, Math.sin(a) * r);
     }));
   },
   kani(){
     const g = new THREE.Group();
-    for (const [x, y, z] of [[0, 0.45, -0.5], [0, 0.45, 0.45], [0.2, 1.22, 0]]){
-      const k = kaniStick(4.4, 0.45); k.position.set(x, y, z); k.rotation.y = rr(-0.1, 0.1); g.add(k);
+    for (const [x, y, z] of [[0, 0.45, -0.95], [0.1, 0.45, 0], [-0.1, 0.45, 0.95]]){   // side by side, not stacked
+      const k = kaniStick(3.9, 0.45); k.position.set(x, y, z); k.rotation.y = rr(-0.1, 0.1); g.add(k);
     }
     return g;
   },
   avocado(){
     const g = new THREE.Group();
+    g.scale.setScalar(0.78); // the fan of slices stays inside its dish (an inner group, so animations can scale the outer one)
     for (let i = 0; i < 4; i++){
       const s = mesh(avocadoSlice(), 'avocado');
       s.position.set(-0.6 + i * 0.4, 0.05 + i * 0.12, 0.9 - i * 0.15);
       s.rotation.y = -0.25 + i * 0.16;
       g.add(s);
     }
-    return g;
+    return group(g);
   },
   kyuri(){
     const g = new THREE.Group();
-    for (const [z, y, r] of [[-0.42, 0.35, 0.05], [0.42, 0.35, -0.04], [0, 1.05, 0.08]]){
-      const s = mesh(cucumberStick(4.4, 0.72), 'kyuri'); s.position.set(0, y, z); s.rotation.y = r; g.add(s);
+    for (const [z, y, r] of [[-0.82, 0.35, 0.05], [0, 0.35, -0.04], [0.82, 0.35, 0.08]]){   // side by side, not stacked
+      const s = mesh(cucumberStick(3.9, 0.72), 'kyuri'); s.position.set(0, y, z); s.rotation.y = r; g.add(s);
     }
     return g;
   },
@@ -382,7 +383,7 @@ export function assembly(recipe){
   } else {
     // Rolls are laid out flat on a bamboo mat: nori, then rice, then fillings in a line.
     const ura = f === 'uramaki', futo = f === 'futomaki';
-    const W = 8.6, D = futo ? 7.4 : ura ? 7.0 : 5.4;
+    const W = 8.6, D = futo ? 6.4 : ura ? 6.2 : 5.4;   // fits on the mat, inside the board's middle
     root.add(makisu());
     const lift = 0.36;
     let fillCount = 0;
@@ -471,7 +472,8 @@ export function finishedModel(recipe){
 }
 
 // ------------------------------------------------------------------ board, dishes, mat
-export const BOARD = { w: 30, d: 20, top: 2.4 };
+export { BOARD } from './layout.js';
+import { BOARD } from './layout.js';
 export function boardModel(){
   const g = new THREE.Group();
   const top = mesh(boxUV(roundedSlab(BOARD.w, 1.5, BOARD.d, 0.35, 12, 2, 8), { tile: 30 }), 'wood');
@@ -493,7 +495,7 @@ export function dishModel(r = 2.45){
 }
 export function makisu(){
   const g = new THREE.Group();
-  const n = 26, W = 10.5;
+  const n = 18, W = 10.5;
   const slats = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.17, 0.17, W, 10).rotateZ(Math.PI / 2), mat('bamboo'), n);
   slats.receiveShadow = true; slats.castShadow = true;
   const mx = new THREE.Matrix4();

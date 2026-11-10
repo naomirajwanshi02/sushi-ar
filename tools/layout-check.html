@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sushi Chef · layout check</title>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body style="font:14px/1.5 ui-monospace,monospace;padding:16px">
+<!-- Measures the real 3D models against the board layout (js/layout.js):
+     every built piece must fit the free middle, and every ingredient must stay on its dish
+     so neighbouring dishes never touch. Prints PASS/FAIL lines; body[data-fails] is set. -->
+<pre id="out"></pre>
+<script type="module">
+import * as THREE from 'three';
+import { RECIPES, INGREDIENTS } from '../js/data.js';
+import { assembly, rawModel } from '../js/models.js';
+import { CENTER, PLAN_SCALE, DISH_R, TOKEN_SCALE } from '../js/layout.js';
+const out = [], box = new THREE.Box3();
+let fails = 0;
+const ok = (c, m) => { out.push(`${c ? 'PASS' : 'FAIL'}  ${m}`); if (!c) fails++; };
+for (const r of RECIPES){
+  const a = assembly(r);
+  r.stages.flat().forEach((id) => a.add(id));
+  const g = new THREE.Group(); g.add(a.root);
+  a.root.rotation.y = r.form === 'nigiri' || r.form === 'gunkan' ? 0.12 : 0;   // as stage.js places it
+  g.scale.setScalar(PLAN_SCALE[r.form]);
+  g.updateMatrixWorld(true);
+  box.setFromObject(g);
+  const hx = Math.max(-box.min.x, box.max.x), hz = Math.max(-box.min.z, box.max.z);
+  ok(hx <= CENTER.hx && hz <= CENTER.hz, `${r.name.padEnd(20)} fits the middle: ${hx.toFixed(2)} × ${hz.toFixed(2)} cm (limit ${CENTER.hx} × ${CENTER.hz})`);
+}
+const v = new THREE.Vector3();
+for (const id of Object.keys(INGREDIENTS)){
+  const m = rawModel(id); m.updateMatrixWorld(true);
+  let reach = 0;
+  m.traverse((o) => {
+    if (!o.geometry) return;
+    const p = o.geometry.attributes.position, mats = o.isInstancedMesh ? o.count : 1, im = new THREE.Matrix4();
+    for (let k = 0; k < mats; k++){
+      if (o.isInstancedMesh) o.getMatrixAt(k, im);
+      for (let i = 0; i < p.count; i++){
+        v.fromBufferAttribute(p, i);
+        if (o.isInstancedMesh) v.applyMatrix4(im);
+        v.applyMatrix4(o.matrixWorld);
+        reach = Math.max(reach, Math.hypot(v.x, v.z));
+      }
+    }
+  });
+  ok(reach * TOKEN_SCALE <= DISH_R, `${INGREDIENTS[id].name.padEnd(16)} stays on its dish: reaches ${(reach * TOKEN_SCALE).toFixed(2)} of ${DISH_R.toFixed(2)} cm`);
+}
+out.push(fails ? `\n${fails} FAILED` : '\nALL LAYOUT CHECKS PASSED');
+document.getElementById('out').textContent = out.join('\n');
+document.body.dataset.fails = fails;
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

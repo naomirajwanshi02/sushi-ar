@@ -12,7 +12,8 @@
 
 import * as THREE from 'three';
 import { setupRenderer, environment, stageLights, fitShadow, roomLight } from './look.js';
-import { rawModel, assembly, finishedModel, boardModel, dishModel, BOARD, contactShadow } from './models.js';
+import { rawModel, assembly, finishedModel, boardModel, dishModel, contactShadow } from './models.js';
+import { BOARD, TOKEN_SCALE, PLAN_SCALE, dishPositions } from './layout.js';
 import { snapshot, disposeStudio } from './icons.js';
 import { INGREDIENTS } from './data.js';
 
@@ -48,9 +49,6 @@ function runTweens(dt){
     if (k >= 1){ R.tweens.splice(i, 1); T.done(); }
   }
 }
-const TOKEN_SCALE = 1.22;
-// The piece in the middle is shown larger than life too, more so for small nigiri.
-const PLAN_SCALE = { nigiri: 1.55, gunkan: 1.55, hosomaki: 1.15, futomaki: 1.1, uramaki: 1.1 };
 const disposeTree = (o) => o.traverse((n) => { if (n.geometry) n.geometry.dispose(); });
 
 // ------------------------------------------------------------------ scene
@@ -166,7 +164,7 @@ const _e = new THREE.Euler();
 // the whole board and its labels stay in view on any phone, tablet or desktop, in
 // portrait or landscape.
 const FREE = { l: 0, t: 0.3, r: 1, b: 0.94 };   // fractions of the viewport
-const TILT = THREE.MathUtils.degToRad(52);
+const TILT = THREE.MathUtils.degToRad(42);   // looking well down on the board, so tall food hides little behind it
 // Points that must stay on screen, in content space (cm): the board's corners, a little
 // above it for the tallest food, and out to where the dish labels sit.
 const FIT_PTS = [];
@@ -260,24 +258,9 @@ function frame(){
 }
 
 // ------------------------------------------------------------------ ingredient dishes
-// Dishes sit on an ellipse inside the board edge, evenly spaced by arc length.
-function ringPoints(n, phase){
-  const rx = 11.0, rz = 6.6, N = 400, cum = [0];
-  const P = (a) => [rx * Math.cos(a), rz * Math.sin(a)];
-  let prev = P(0);
-  for (let i = 1; i <= N; i++){ const p = P((i / N) * Math.PI * 2); cum.push(cum[i - 1] + Math.hypot(p[0] - prev[0], p[1] - prev[1])); prev = p; }
-  const out = [];
-  for (let k = 0; k < n; k++){
-    const want = ((k / n + phase) % 1) * cum[N];
-    let i = cum.findIndex((c) => c >= want); if (i < 0) i = N;
-    out.push(P((i / N) * Math.PI * 2));
-  }
-  return out;
-}
-
 export function setTokens(ids){
   clearTokens(true);
-  const pts = ringPoints(ids.length, 0.03 + Math.random() * 0.05);
+  const pts = dishPositions(ids.length, Math.random());
   ids.forEach((id, i) => {
     const node = new THREE.Group();
     node.position.set(pts[i][0], BOARD.top, pts[i][1]);
@@ -301,7 +284,7 @@ export function setTokens(ids){
     label.className = 'tlabel';
     label.textContent = INGREDIENTS[id].short;
     R.labels.appendChild(label);
-    const tk = { id, node, model, hit, ring, label, baseY, spin, phase: i * 1.3, alive: true, out: Math.sign(pts[i][1]) || 1 };
+    const tk = { id, node, model, hit, ring, label, baseY, spin, phase: i * 1.3, alive: true, out: Math.abs(pts[i][1]) > 4 ? Math.sign(pts[i][1]) : 1 };
     hit.userData.token = tk;
     R.tokens.set(id, tk);
     tw(0.45, EASE.pop, (k) => node.scale.setScalar(Math.max(k, 0.001)), i * 0.05);
@@ -417,7 +400,7 @@ function toScreen(v){
 function updateLabels(){
   for (const tk of R.tokens.values()){
     // the label sits on the outer side of its dish, away from the piece in the middle
-    _v.set(tk.node.position.x, BOARD.top + 0.4, tk.node.position.z + tk.out * 3.9);
+    _v.set(tk.node.position.x, BOARD.top + 0.4, tk.node.position.z + tk.out * 2.7);   // on the rim of its own dish, clear of its neighbours
     R.content.localToWorld(_v);
     const s = toScreen(_v);
     tk.label.style.transform = `translate(${s.x}px, ${s.y}px) translate(-50%, -50%)`;

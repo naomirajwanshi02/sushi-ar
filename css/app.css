@@ -307,3 +307,7 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 @media (min-width:900px){
   .hudstack{max-width:600px}
 }
+
+/* the score row and the order card share one column, so their edges line up exactly */
+.hud.top{width:100%;max-width:none;margin:0}
+.ordercard{width:100%;margin:0}
