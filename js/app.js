@@ -4,7 +4,7 @@
 // ?demo=1   no card: the board floats in front of the camera from the start
 // ?target=./other.mind   use another compiled card
 
-import { INGREDIENTS, RECIPES, FORM_NAME, FORM_JP, PACE } from './data.js';
+import { INGREDIENTS, RECIPES, PACE } from './data.js';
 import { createGame } from './rules.js';
 import * as Stage from './stage.js';
 
@@ -17,27 +17,6 @@ const store = {
   set(k, v){ try { localStorage.setItem('sushichef.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-// ------------------------------------------------------------ sound (tiny synth, no files)
-const sound = {
-  ctx: null, on: store.get('sound', true),
-  unlock(){ if (!this.ctx){ try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { this.on = false; } } this.ctx?.resume?.(); },
-  tone(freq, dur = 0.09, type = 'triangle', gain = 0.14, slide = 0, delay = 0){
-    if (!this.on || !this.ctx) return;
-    const t = this.ctx.currentTime + delay;
-    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
-    o.type = type; o.frequency.setValueAtTime(freq, t);
-    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
-    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(this.ctx.destination); o.start(t); o.stop(t + dur + 0.02);
-  },
-  good(step){ this.tone(520 + step * 60, 0.08); this.tone(780 + step * 60, 0.1, 'sine', 0.08, 0, 0.05); },
-  bad(){ this.tone(180, 0.22, 'square', 0.08, -80); },
-  tick(){ this.tone(1200, 0.03, 'square', 0.04); },
-  clack(){ this.tone(140, 0.06, 'square', 0.12, -60); this.tone(2400, 0.02, 'square', 0.03); },
-  serve(){ [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.14, 'triangle', 0.12, 0, i * 0.07)); },
-  combo(m){ [0, 1, 2].forEach((i) => this.tone(600 + m * 90 + i * 140, 0.08, 'sine', 0.1, 0, i * 0.05)); },
-  lose(){ [392, 330, 262].forEach((f, i) => this.tone(f, 0.2, 'triangle', 0.12, 0, i * 0.12)); },
-};
 const buzz = (ms) => { try { navigator.vibrate?.(ms); } catch { /* unsupported */ } };
 
 const G = createGame();
@@ -63,8 +42,7 @@ function setOdo(el, value){
 function lockScore(){
   const odo = $('odo');
   odo.classList.remove('lock'); void odo.offsetWidth; odo.classList.add('lock');
-  $('scoreBox').classList.add('locked');
-  sound.clack(); buzz(20);
+  $('scoreBox').classList.add('locked'); buzz(20);
   clearTimeout(lockScore.t);
   lockScore.t = setTimeout(() => $('scoreBox').classList.remove('locked'), 1100);
 }
@@ -131,9 +109,7 @@ function newOrder(){
   Stage.newPlate(r);
   Stage.setTokens(G.tokens);
   $('ordNo').textContent = `Order ${String(G.served + 1).padStart(2, '0')}`;
-  $('ordForm').textContent = `${FORM_NAME[r.form]} · ${FORM_JP[r.form]}`;
   $('ordName').textContent = r.name;
-  $('ordJp').textContent = r.jp;
   $('ordPic').src = Stage.plateIcon(r);
   UI.lastTick = -1;
   renderTicket();
@@ -161,20 +137,17 @@ function renderTicket(){
 // ------------------------------------------------------------ picking
 function onPick(id){
   if (UI.paused || G.phase !== 'play') return;
-  sound.unlock();
   const at = Stage.tokenScreen(id);
   const res = G.pick(id);
   if (!res.ok){
     if (res.reason === 'idle') return;
-    Stage.wrong(id);
-    sound.bad(); buzz(80);
+    Stage.wrong(id); buzz(80);
     tagAt(at, `✕ ${res.message}`, 'bad');
     renderMult(false);
     return;
   }
   Stage.accept(id);
   Stage.hint(null);
-  sound.good(G.got.length);
   buzz(12);
   tagAt(at, `+10 ${INGREDIENTS[id].short}`, 'good');
   showScore(shown + 10);
@@ -185,19 +158,18 @@ function onPick(id){
 async function serve(){
   const r = G.recipe;
   const out = G.serve();
-  sound.serve(); buzz([20, 40, 20]);
+  buzz([20, 40, 20]);
   popup(out.perfect ? 'Perfect plate!' : 'Order up!', 'big', 0.36);
   toast(`<b>${r.name}</b> — ${r.fact}`);
   flyPoints(out.total, () => showScore(G.score, true));
   renderMult(out.bumped);
-  if (out.bumped) setTimeout(() => { sound.combo(out.mult); popup(`${G.streak} perfect in a row!  ×${out.mult}`, 'mid', 0.5); }, 600);
+  if (out.bumped) setTimeout(() => { popup(`${G.streak} perfect in a row!  ×${out.mult}`, 'mid', 0.5); }, 600);
   Stage.clearTokens();
   await Stage.serve(r);
   if (G.phase === 'between' && UI.started) newOrder();
 }
 
-async function timedOut(over){
-  sound.lose(); buzz([60, 40, 60]);
+async function timedOut(over){ buzz([60, 40, 60]);
   popup('Too slow! The customer left', 'mid', 0.36);
   renderLives(); renderMult(false);
   Stage.clearTokens();
@@ -217,7 +189,7 @@ function loop(t){
     $('timerBar').style.transform = `scaleX(${frac})`;
     $('timer').classList.toggle('hot', frac < 0.3);
     const sec = Math.ceil(G.timeLeft);
-    if (frac < 0.3 && sec !== UI.lastTick){ UI.lastTick = sec; sound.tick(); }
+    if (frac < 0.3 && sec !== UI.lastTick){ UI.lastTick = sec; }
     if (G.showHint()) Stage.hint(G.wanted());
     if (res) timedOut(res === 'over');
   }
@@ -245,7 +217,7 @@ async function openScan(){
     await Stage.start($('ar'), {
       demo: DEMO,
       onStatus: (s) => { $('scanStatus').textContent = s; },
-      onFound, onPick, onTrack,
+      onFound, onPick,
     });
   } catch (err){
     console.error(err);
@@ -263,17 +235,11 @@ function onFound(){
   overlay('found', true);
   setTimeout(() => { overlay('found', false); openIntro(); }, 1300);
 }
-function onTrack(onCard){
-  $('trackPill').classList.toggle('free', !onCard);
-  $('trackText').textContent = DEMO ? 'Demo · no card needed' : onCard ? 'On the card' : 'Card not needed · keep playing';
-}
 function openIntro(){
   $('heroDish').src = Stage.plateIcon(RECIPES[0], 320);
-  $('introCount').textContent = `${RECIPES.length} pieces`;
   show('intro');
 }
 function startGame(){
-  sound.unlock();
   if (!DEMO) Stage.enableRoomLight();
   G.reset();
   Stage.reset();
@@ -282,11 +248,10 @@ function startGame(){
   renderLives(); renderMult(false);
   show(null);
   overlay('hud', true);
-  onTrack(DEMO ? false : Stage.onCard());
   requestAnimationFrame(layoutFree);
   newOrder();
 }
-function pause(){ if (!UI.started) return; UI.paused = true; $('soundBtn').textContent = `Sound: ${sound.on ? 'on' : 'off'}`; show('pause'); }
+function pause(){ if (!UI.started) return; UI.paused = true; show('pause'); }
 function resume(){ UI.paused = false; show(null); }
 
 function gameOver(){
@@ -299,22 +264,19 @@ function gameOver(){
   $('finalScore').textContent = G.score.toLocaleString();
   $('stPlates').textContent = G.served;
   $('stStreak').textContent = G.maxStreak;
-  $('stMult').textContent = `×${G.maxMult}`;
-  $('overPlates').textContent = `${G.served} plate${G.served === 1 ? '' : 's'}`;
-  $('overBest').textContent = `best ${Math.max(best, G.score).toLocaleString()}`;
+  $('stBest').textContent = Math.max(best, G.score).toLocaleString();
   const made = RECIPES.filter((r) => G.learned.has(r.id));
   $('learned').textContent = made.length ? `You made ${made.length} different piece${made.length === 1 ? '' : 's'} of sushi:` : 'Every chef starts somewhere. Try again!';
   $('made').innerHTML = made.map((r) => `<img src="${Stage.plateIcon(r)}" alt="${r.name}" title="${r.name}">`).join('');
   $('newBest').classList.remove('on');
   show('over');
-  if (isBest) setTimeout(() => { $('newBest').classList.add('on'); sound.combo(5); }, 800);
+  if (isBest) setTimeout(() => $('newBest').classList.add('on'), 800);
 }
 
 // ------------------------------------------------------------ wiring
 $('goBtn').addEventListener('click', startGame);
 $('pauseBtn').addEventListener('click', pause);
 $('resumeBtn').addEventListener('click', resume);
-$('soundBtn').addEventListener('click', () => { sound.on = !sound.on; store.set('sound', sound.on); $('soundBtn').textContent = `Sound: ${sound.on ? 'on' : 'off'}`; });
 $('quitBtn').addEventListener('click', () => { UI.paused = false; gameOver(); });
 $('againBtn').addEventListener('click', startGame);
 $('rescanBtn').addEventListener('click', () => location.reload());
@@ -332,8 +294,7 @@ addEventListener('unhandledrejection', (e) => { const s = e.reason?.stack || e.r
 function layoutFree(){
   const W = innerWidth, H = innerHeight;
   const hud = $('hud').classList.contains('on') ? document.querySelector('.hudstack').getBoundingClientRect() : null;
-  const pill = $('trackPill').getBoundingClientRect();
-  let left = 0, top = 0, right = W, bottom = pill.height ? pill.top : H;
+  let left = 0, top = 0, right = W, bottom = H;
   if (hud && hud.height){
     if (hud.width < W * 0.6 && hud.right < W * 0.6){ left = hud.right; bottom = H; } // side column
     else top = hud.bottom;

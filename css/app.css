@@ -238,37 +238,26 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 /* the camera feed is warmed a touch toward the sepia paper, as in Ramen_Builder */
 #ar video{filter:sepia(.12) saturate(1.05)}
 
-/* found badge: a red hanko-style stamp, as in Noh_Masks */
+/* found badge: a red stamp with a tick, as in Noh_Masks */
 .badge .stamp{width:64px;height:64px;margin:0 auto 6px;border:4px solid var(--anatomy-red);border-radius:50%;color:var(--anatomy-red);
-  font:900 34px/56px 'Zen Maru Gothic','Yu Gothic',sans-serif;transform:rotate(-10deg)}
+  display:grid;place-items:center;transform:rotate(-10deg)}
 
 /* ================= WELCOME (Noh_Masks' welcome plate) ================= */
 .welcome{padding:34px 18px 30px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:stretch}
 .hero-dish{width:170px;height:120px;object-fit:contain;margin:-10px auto -10px;filter:drop-shadow(0 8px 10px #3b2a1c40);animation:bob 3s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-6px) rotate(1.5deg)}}
 .welcome h1{margin:0;font-size:clamp(28px,8.5vw,36px);line-height:1.05;font-weight:900;color:var(--anatomy-strong)}
-.welcome .kana{font-size:13px;letter-spacing:.5em;color:var(--anatomy-red);font-weight:700;margin-top:-4px}
 .welcome p{margin:0 auto;max-width:36ch;font-size:14.5px}
-.welcome p.small{font-size:12.5px;color:var(--anatomy-muted)}
-.steps{list-style:none;margin:2px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:left}
-.steps li{display:flex;gap:8px;align-items:center;background:var(--anatomy-shade-3);border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.2;box-shadow:inset 0 0 0 1px var(--anatomy-faint)}
-.steps li > b{flex:none;width:24px;height:24px;border-radius:50%;background:var(--anatomy-red);color:#fff8ec;display:grid;place-items:center;font-size:13px}
 
 
 /* ================= ORDER CARD ================= */
 .ordpic{width:58px;height:46px;flex:none;object-fit:contain;filter:drop-shadow(0 2px 3px #3b2a1c40)}
-.ordercard .jp{font-size:12px;color:var(--anatomy-red);font-weight:700;margin-left:4px}
 .chip img{width:46px;height:46px;object-fit:contain;display:block}
 .ticket .sep{width:9px;height:2px;background:var(--anatomy-lo);border-radius:2px}
 .ticket .group{display:flex;gap:3px;padding:2px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--anatomy-faint);background:var(--anatomy-shade-3)}
 .ticket .group .chip{box-shadow:none}
 .ticket .group .chip.next{box-shadow:0 0 0 2.5px var(--anatomy-red)}
 
-/* the board's whereabouts: on the card, or floating because the card left the view */
-.trackpill{align-self:center;display:flex;align-items:center;gap:6px;font:600 10px/1 var(--anatomy-mono);letter-spacing:.12em;text-transform:uppercase;
-  color:#fff8ec;background:rgba(28,18,10,.55);padding:6px 10px;border-radius:999px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
-.trackpill i{width:7px;height:7px;border-radius:50%;background:#7fbf5a;box-shadow:0 0 6px #7fbf5a}
-.trackpill.free i{background:#ffd9a8;box-shadow:0 0 6px #ffd9a8}
 
 /* labels under the dishes */
 .tlabel.hint{animation:hintlabel 1s ease-in-out infinite}
@@ -295,18 +284,15 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
   .hero-dish{width:120px;height:84px;margin:-8px auto -6px}
   .welcome h1{font-size:28px}
   .welcome p{font-size:13.5px}
-  .steps li{font-size:12px;padding:6px 8px}
-}
+  }
 @media (max-width:340px){
-  .steps{grid-template-columns:1fr}
-  .hud.top{gap:4px}
+    .hud.top{gap:4px}
   .score{padding:4px 8px}
 }
 /* landscape phones: the HUD becomes a column on the left and the board sits to its right */
 @media (orientation:landscape) and (max-height:560px){
   .col{max-width:min(640px,92vw)}
-  .welcome .steps{grid-template-columns:repeat(4,1fr)}
-  .hero-dish{display:none}
+  .welcome   .hero-dish{display:none}
   #hud{flex-direction:row;align-items:flex-start;justify-content:space-between}
   .hudstack{max-width:min(46vw,380px);margin:0}
   .ordercard{max-width:none}
@@ -314,8 +300,7 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
   .chip{width:50px}.chip img{width:36px;height:36px}.chip span{font-size:9.5px}
   .ordpic{width:44px;height:36px}
   .timer{margin-top:6px}
-  .trackpill{align-self:flex-end}
-  .toast{left:auto;right:calc(var(--safe-r) + 8px);transform:translate(0,30px);width:min(48vw,420px)}
+    .toast{left:auto;right:calc(var(--safe-r) + 8px);transform:translate(0,30px);width:min(48vw,420px)}
   .toast.on{transform:translate(0,0)}
 }
 /* big screens: keep the HUD a comfortable size instead of stretching */
