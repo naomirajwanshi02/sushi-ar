@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sushi Chef · model sheet</title>
+<link rel="stylesheet" href="../vendor/anatomy/iso.css">
+<link rel="stylesheet" href="../css/anatomy-sepia.css">
+<style>
+  body{margin:0;padding:20px;background:var(--anatomy-page);color:var(--anatomy-text);font:500 14px/1.4 ui-sans-serif,system-ui,sans-serif}
+  h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--anatomy-muted);margin:24px 0 10px;font-family:var(--anatomy-mono)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--w,150px),1fr));gap:10px}
+  figure{margin:0;background:var(--anatomy-card);box-shadow:var(--anatomy-lift),0 0 0 1px var(--anatomy-mid);border-radius:6px;padding:6px;text-align:center}
+  figure img{width:100%;display:block}
+  figcaption{font-size:12px;font-weight:700;color:var(--anatomy-strong)}
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body class="iso" data-theme="sepia">
+<!-- Every model in the game, photographed with the same lights. ?size=320 for close-ups. -->
+<h2>Ingredients</h2><div class="grid" id="raw"></div>
+<h2>Building a piece, stage by stage</h2><div class="grid" id="steps" style="--w:180px"></div>
+<h2>Served plates</h2><div class="grid" id="done" style="--w:220px"></div>
+<script type="module">
+import { INGREDIENTS, RECIPES } from '../js/data.js';
+import { rawModel, assembly, finishedModel, dishModel } from '../js/models.js';
+import { snapshot } from '../js/icons.js';
+import * as THREE from 'three';
+const size = +new URLSearchParams(location.search).get('size') || 200;
+const only = new URLSearchParams(location.search).get('only');
+const add = (where, url, label) => { const f = document.createElement('figure'); f.innerHTML = `<img src="${url}"><figcaption>${label}</figcaption>`; document.getElementById(where).appendChild(f); };
+for (const id of Object.keys(INGREDIENTS)){
+  const g = new THREE.Group(); g.add(dishModel()); const m = rawModel(id); m.position.y = 0.32; g.add(m);
+  add('raw', snapshot(g, size), INGREDIENTS[id].name);
+}
+for (const r of RECIPES.filter((r) => !only || r.id === only)){
+  const a = assembly(r);
+  r.stages.flat().forEach((id, i) => { a.add(id); add('steps', snapshot(a.root, size, { pad: 1.15 }), `${r.name} · ${i + 1}. ${INGREDIENTS[id].short}`); });
+  add('done', snapshot(finishedModel(r), size * 1.3, { el: 42 }), r.name);
+}
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>

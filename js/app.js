@@ -1,0 +1,322 @@
+// Sushi Chef: scan the card → the sushi bar opens → build orders against the clock.
+// Rules live in rules.js, the 3D board in stage.js; this file is the screens and the HUD.
+//
+// ?demo=1   no card: the board floats in front of the camera from the start
+// ?target=./other.mind   use another compiled card
+
+import { INGREDIENTS, RECIPES, FORM_NAME, FORM_JP, PACE } from './data.js';
+import { createGame } from './rules.js';
+import * as Stage from './stage.js';
+
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const DEMO = params.has('demo');
+
+const store = {
+  get(k, d){ try { const v = localStorage.getItem('sushichef.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v){ try { localStorage.setItem('sushichef.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
+};
+
+// ------------------------------------------------------------ sound (tiny synth, no files)
+const sound = {
+  ctx: null, on: store.get('sound', true),
+  unlock(){ if (!this.ctx){ try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { this.on = false; } } this.ctx?.resume?.(); },
+  tone(freq, dur = 0.09, type = 'triangle', gain = 0.14, slide = 0, delay = 0){
+    if (!this.on || !this.ctx) return;
+    const t = this.ctx.currentTime + delay;
+    const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
+    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(this.ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+  },
+  good(step){ this.tone(520 + step * 60, 0.08); this.tone(780 + step * 60, 0.1, 'sine', 0.08, 0, 0.05); },
+  bad(){ this.tone(180, 0.22, 'square', 0.08, -80); },
+  tick(){ this.tone(1200, 0.03, 'square', 0.04); },
+  clack(){ this.tone(140, 0.06, 'square', 0.12, -60); this.tone(2400, 0.02, 'square', 0.03); },
+  serve(){ [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.14, 'triangle', 0.12, 0, i * 0.07)); },
+  combo(m){ [0, 1, 2].forEach((i) => this.tone(600 + m * 90 + i * 140, 0.08, 'sine', 0.1, 0, i * 0.05)); },
+  lose(){ [392, 330, 262].forEach((f, i) => this.tone(f, 0.2, 'triangle', 0.12, 0, i * 0.12)); },
+  stamp(){ this.tone(90, 0.25, 'sine', 0.3, -40); this.tone(300, 0.05, 'square', 0.06); },
+};
+const buzz = (ms) => { try { navigator.vibrate?.(ms); } catch { /* unsupported */ } };
+
+const G = createGame();
+const UI = { paused: false, lastTick: -1, started: false };
+
+const show = (id) => document.querySelectorAll('.screen').forEach((el) => el.classList.toggle('on', el.id === id));
+const overlay = (id, on) => $(id).classList.toggle('on', on);
+
+// ------------------------------------------------------------ odometer (Ramen_Builder's)
+const ODO_DIGITS = 6;
+function buildOdo(el, digits){
+  el.innerHTML = Array.from({ length: digits }, () =>
+    `<div class="d"><span>${Array.from({ length: 10 }, (_, n) => `<i>${n}</i>`).join('')}</span></div>`).join('');
+}
+function setOdo(el, value){
+  const h = el.firstChild.offsetHeight || 26;
+  const s = String(Math.min(value, 10 ** el.children.length - 1)).padStart(el.children.length, '0');
+  [...el.children].forEach((d, i) => {
+    d.firstChild.style.transform = `translateY(${-Number(s[i]) * h}px)`;
+    d.style.opacity = i < el.children.length - String(value).length ? '.28' : '1';
+  });
+}
+function lockScore(){
+  const odo = $('odo');
+  odo.classList.remove('lock'); void odo.offsetWidth; odo.classList.add('lock');
+  $('scoreBox').classList.add('locked');
+  sound.clack(); buzz(20);
+  clearTimeout(lockScore.t);
+  lockScore.t = setTimeout(() => $('scoreBox').classList.remove('locked'), 1100);
+}
+// The odometer shows what has landed; points still flying in are added when they arrive.
+let shown = 0;
+function showScore(value, lock = false){ shown = value; setOdo($('odo'), shown); if (lock) lockScore(); }
+
+// ------------------------------------------------------------ HUD helpers
+function renderMult(bumped){
+  const m = $('mult');
+  m.dataset.m = G.mult;
+  m.innerHTML = `<div>×${G.mult}<small>${G.streak ? `${G.streak} perfect` : 'combo'}</small></div>`;
+  if (bumped){ m.classList.remove('bump'); void m.offsetWidth; m.classList.add('bump'); }
+}
+// A life is one waiting customer's plate: a little salmon nigiri.
+const LIFE = `<svg viewBox="0 0 24 20" aria-hidden="true"><ellipse cx="12" cy="13.5" rx="9" ry="4.4" fill="#f6eddb" stroke="#3b2a1c" stroke-width="1.3"/><path d="M3 10.5q9-6.5 18 0q-9 3.4-18 0Z" fill="#e8622c" stroke="#3b2a1c" stroke-width="1.3"/><path d="M7.5 8.6l1.6 2.3M11.4 7.7l1.7 2.6M15.3 7.9l1.6 2.4" stroke="#ffd7c0" stroke-width="1" stroke-linecap="round"/></svg>`;
+function renderLives(){
+  $('lives').innerHTML = Array.from({ length: PACE.lives }, () => LIFE).join('');
+  [...$('lives').children].forEach((el, i) => el.classList.toggle('gone', i >= G.lives));
+}
+function popup(text, cls = 'mid', y = 0.42){
+  const el = document.createElement('div');
+  el.className = `pop ${cls}`;
+  el.style.top = `${Math.round(innerHeight * y)}px`;
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1400);
+}
+function tagAt({ x, y }, text, cls = ''){
+  const el = document.createElement('div');
+  el.className = `tag ${cls}`;
+  el.textContent = text;
+  el.style.left = `${Math.max(70, Math.min(innerWidth - 70, x))}px`;
+  el.style.top = `${Math.max(120, Math.min(innerHeight - 80, y))}px`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1050);
+}
+function toast(html, ms = 4200){
+  const t = $('toast');
+  t.innerHTML = html;
+  t.classList.add('on');
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => t.classList.remove('on'), ms);
+}
+function flyPoints(points, done){
+  const from = Stage.plateScreen();
+  const to = $('odo').getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'pts';
+  el.textContent = `+${points}`;
+  el.style.left = `${from.x - 30}px`;
+  el.style.top = `${from.y - 20}px`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.style.transform = `translate(${to.left - from.x + 30}px, ${to.top - from.y + 20}px) scale(.7)`;
+    el.style.opacity = '.2';
+  }));
+  setTimeout(() => { el.remove(); done(); }, 820);
+}
+
+// ------------------------------------------------------------ the order card
+function newOrder(){
+  const r = G.newOrder();
+  Stage.newPlate(r);
+  Stage.setTokens(G.tokens);
+  $('ordNo').textContent = `Order ${String(G.served + 1).padStart(2, '0')}`;
+  $('ordForm').textContent = `${FORM_NAME[r.form]} · ${FORM_JP[r.form]}`;
+  $('ordName').textContent = r.name;
+  $('ordJp').textContent = r.jp;
+  $('ordPic').src = Stage.plateIcon(r);
+  UI.lastTick = -1;
+  renderTicket();
+}
+
+// Stages left to right; a stage with several ingredients is boxed: those go in any order.
+function renderTicket(){
+  const r = G.recipe, si = G.stageIndex();
+  $('ticket').innerHTML = r.stages.map((stage, i) => {
+    const chips = stage.map((id) => {
+      const done = G.got.includes(id), next = !done && i === si;
+      return `<div class="chip${done ? ' done' : ''}${next ? ' next' : ''}" title="${INGREDIENTS[id].name}"><img src="${Stage.ingredientIcon(id)}" alt=""><span>${INGREDIENTS[id].short}</span></div>`;
+    }).join('');
+    return (i ? '<span class="sep"></span>' : '') + (stage.length > 1 ? `<div class="group" title="Any order">${chips}</div>` : chips);
+  }).join('');
+  const got = G.got.length, need = G.need.length;
+  $('ordRead').textContent = `${got}/${need}`;
+  const want = G.wanted();
+  $('hint').innerHTML = G.done() ? 'Order up!'
+    : want.length > 1 ? `Any order: <b>${want.map((id) => INGREDIENTS[id].short).join(' · ')}</b>`
+    : `Tap the <b>${INGREDIENTS[want[0]].short}</b>`;
+}
+
+// ------------------------------------------------------------ picking
+function onPick(id){
+  if (UI.paused || G.phase !== 'play') return;
+  sound.unlock();
+  const at = Stage.tokenScreen(id);
+  const res = G.pick(id);
+  if (!res.ok){
+    if (res.reason === 'idle') return;
+    Stage.wrong(id);
+    sound.bad(); buzz(80);
+    tagAt(at, `✕ ${res.message}`, 'bad');
+    renderMult(false);
+    return;
+  }
+  Stage.accept(id);
+  Stage.hint(null);
+  sound.good(G.got.length);
+  buzz(12);
+  tagAt(at, `+10 ${INGREDIENTS[id].short}`, 'good');
+  showScore(shown + 10);
+  renderTicket();
+  if (res.done) setTimeout(serve, 450);
+}
+
+async function serve(){
+  const r = G.recipe;
+  const out = G.serve();
+  sound.serve(); buzz([20, 40, 20]);
+  popup(out.perfect ? 'Perfect plate!' : 'Order up!', 'big', 0.36);
+  const p = out.parts;
+  // say exactly where the points came from
+  const sum = `${p.plate} plate + ${p.speed} speed${p.perfect ? ' + 50 perfect' : ''}${p.mult > 1 ? ` × ${p.mult}` : ''} = <b>${out.total}</b>`;
+  toast(`<b>${r.name}</b> — ${r.fact}<br><span class="cap">${sum}</span>`);
+  flyPoints(out.total, () => showScore(G.score, true));
+  renderMult(out.bumped);
+  if (out.bumped) setTimeout(() => { sound.combo(out.mult); popup(`${G.streak} perfect in a row!  ×${out.mult}`, 'mid', 0.5); }, 600);
+  Stage.clearTokens();
+  await Stage.serve(r);
+  if (G.phase === 'between' && UI.started) newOrder();
+}
+
+async function timedOut(over){
+  sound.lose(); buzz([60, 40, 60]);
+  popup('Too slow! The customer left', 'mid', 0.36);
+  renderLives(); renderMult(false);
+  Stage.clearTokens();
+  await Stage.dump();
+  if (over) gameOver();
+  else if (UI.started) newOrder();
+}
+
+// ------------------------------------------------------------ loop: the clock
+let lastT = 0;
+function loop(t){
+  const dt = Math.min(0.1, (t - lastT) / 1000 || 0);
+  lastT = t;
+  if (UI.started && !UI.paused && G.phase === 'play'){
+    const res = G.tick(dt);
+    const frac = Math.max(0, G.timeLeft / G.timeMax);
+    $('timerBar').style.transform = `scaleX(${frac})`;
+    $('timer').classList.toggle('hot', frac < 0.3);
+    const sec = Math.ceil(G.timeLeft);
+    if (frac < 0.3 && sec !== UI.lastTick){ UI.lastTick = sec; sound.tick(); }
+    if (G.showHint()) Stage.hint(G.wanted());
+    if (res) timedOut(res === 'over');
+  }
+  requestAnimationFrame(loop);
+}
+
+// ------------------------------------------------------------ flow
+async function openScan(){
+  overlay('guide', true);
+  $('scanRetry').hidden = true;
+  try {
+    await Stage.start($('ar'), {
+      demo: DEMO,
+      onStatus: (s) => { $('scanStatus').textContent = s; },
+      onFound, onPick, onTrack,
+    });
+  } catch (err){
+    console.error(err);
+    const msg = String(err?.message || err?.name || err || '');
+    $('scanStatus').textContent = /NotAllowed|Permission/i.test(msg)
+      ? 'The camera was blocked. Tap the “aA” or lock icon next to the address, allow the camera, then tap Try again.'
+      : /mind|fetch|404/i.test(msg) ? `Could not load the card data (${msg}).`
+      : 'The camera did not start. Close other apps that use it and tap Try again.';
+    $('scanRetry').hidden = false;
+  }
+}
+function onFound(){
+  overlay('guide', false);
+  buzz(40);
+  overlay('found', true);
+  setTimeout(() => { overlay('found', false); openIntro(); }, 1300);
+}
+function onTrack(onCard){
+  $('trackPill').classList.toggle('free', !onCard);
+  $('trackText').textContent = DEMO ? 'Demo · no card needed' : onCard ? 'On the card' : 'Card not needed · keep playing';
+}
+function openIntro(){
+  $('heroDish').src = Stage.plateIcon(RECIPES[0], 320);
+  $('introCount').textContent = `${RECIPES.length} pieces`;
+  show('intro');
+}
+function startGame(){
+  sound.unlock();
+  if (!DEMO) Stage.enableRoomLight();
+  G.reset();
+  Stage.reset();
+  UI.started = true; UI.paused = false;
+  buildOdo($('odo'), ODO_DIGITS); showScore(0);
+  renderLives(); renderMult(false);
+  show(null);
+  overlay('hud', true);
+  onTrack(DEMO ? false : Stage.onCard());
+  newOrder();
+}
+function pause(){ if (!UI.started) return; UI.paused = true; $('soundBtn').textContent = `Sound: ${sound.on ? 'on' : 'off'}`; show('pause'); }
+function resume(){ UI.paused = false; show(null); }
+
+function gameOver(){
+  UI.started = false;
+  G.phase = 'over';
+  overlay('hud', false);
+  Stage.reset();
+  const best = store.get('best', 0), isBest = G.score > best;
+  if (isBest) store.set('best', G.score);
+  $('finalScore').textContent = G.score.toLocaleString();
+  $('stPlates').textContent = G.served;
+  $('stStreak').textContent = G.maxStreak;
+  $('stMult').textContent = `×${G.maxMult}`;
+  $('overPlates').textContent = `${G.served} plate${G.served === 1 ? '' : 's'}`;
+  $('overBest').textContent = `best ${Math.max(best, G.score).toLocaleString()}`;
+  const made = RECIPES.filter((r) => G.learned.has(r.id));
+  $('learned').textContent = made.length ? `You made ${made.length} different piece${made.length === 1 ? '' : 's'} of sushi:` : 'Every chef starts somewhere. Try again!';
+  $('made').innerHTML = made.map((r) => `<img src="${Stage.plateIcon(r)}" alt="${r.name}" title="${r.name}">`).join('');
+  $('newBest').classList.remove('on'); $('hanko').classList.remove('on');
+  show('over');
+  setTimeout(() => { $('hanko').classList.add('on'); sound.stamp(); buzz(30); }, 450);
+  if (isBest) setTimeout(() => { $('newBest').classList.add('on'); sound.combo(5); }, 800);
+}
+
+// ------------------------------------------------------------ wiring
+$('goBtn').addEventListener('click', startGame);
+$('pauseBtn').addEventListener('click', pause);
+$('resumeBtn').addEventListener('click', resume);
+$('soundBtn').addEventListener('click', () => { sound.on = !sound.on; store.set('sound', sound.on); $('soundBtn').textContent = `Sound: ${sound.on ? 'on' : 'off'}`; });
+$('quitBtn').addEventListener('click', () => { UI.paused = false; gameOver(); });
+$('againBtn').addEventListener('click', startGame);
+$('rescanBtn').addEventListener('click', () => location.reload());
+$('scanRetry').addEventListener('click', () => location.reload());
+$('errBtn').addEventListener('click', () => location.reload());
+document.addEventListener('visibilitychange', () => { if (document.hidden && UI.started && !UI.paused) pause(); });
+
+// MindAR's own listeners can throw after a failed camera start; the screen already says what to do.
+const fromTracker = (s) => /mind-?ar/i.test(String(s));
+addEventListener('error', (e) => { const s = e.error?.stack || e.message; if (fromTracker(s + e.filename)) return; $('errText').textContent = String(s); $('err').hidden = false; });
+addEventListener('unhandledrejection', (e) => { const s = e.reason?.stack || e.reason; if (fromTracker(s)) return; $('errText').textContent = String(s); $('err').hidden = false; });
+
+window.__sushi = { G, Stage, startGame, onPick };
+requestAnimationFrame(loop);
+openScan();
