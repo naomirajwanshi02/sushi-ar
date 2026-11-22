@@ -11,8 +11,9 @@ a sushi chef does, step by step, against the clock. Made for ages 8+.
 ## How to play
 
 1. Open the link. It goes straight to the camera viewfinder. Point it at the card.
-2. When the card is found, a red stamp says *Found it!* and a short welcome explains the game.
-   Tap **Let's cook!**
+2. When the card is found, a red stamp says *Found it!* and a short **how-to-play tour** starts, as
+   in Ramen_Builder: four tooltips light up the order, the middle of the board, the ingredient
+   dishes, and the score and lives. The clock only starts when you tap **Let's cook!** (or Skip).
 3. An **order** comes in, such as *California Roll*. Ingredients wait on little glazed dishes round
    the board. Tap them in the **chef's order**; the piece builds up in the middle of the board.
 4. When every ingredient is in, the plate is **served**: a pair of nigiri, or the roll cut into six.
@@ -43,7 +44,8 @@ Pickled ginger (gari) is on the board every time and never belongs in a piece: k
 of the game.
 
 **Order inside a stage is free.** A chef must lay nori before rice, but the three fillings of a
-California roll can go in any order. The ticket boxes those together.
+California roll can go in any order. The ticket shows every ingredient left to right with a dash
+between each, and outlines in red whatever can be tapped next (all three fillings at once).
 
 **One ramp.** The first three orders are three-step pieces (nigiri, gunkan, thin rolls). Four-step
 pieces unlock at order 4 and the big rolls at order 7. Decoys grow from 2 to 6 by the 12th plate, and
@@ -103,7 +105,7 @@ its own dish's rim.
 **Works on any screen and in any browser.** When the card leaves the view, the floating board measures
 the space the HUD leaves free and fits itself and its labels into it: below the HUD on a portrait
 phone, beside it when the HUD becomes a left-hand column in landscape, and centred on tablets and
-desktops. The welcome card's start button stays in view on short screens, and safe areas (notches,
+desktops. The how-to-play tooltips sit beside what they point at when a landscape screen is too short to fit them above or below, and safe areas (notches,
 home bars) are respected. Browsers built into other apps (Instagram, WhatsApp, Facebook, TikTok…)
 often block the camera: the game recognises them and says how to open the page in Safari or Chrome,
 with a button that copies the link.
@@ -112,8 +114,8 @@ with a button that copies the link.
 
 | File | What it is |
 |---|---|
-| `index.html` | The screens: viewfinder, welcome, HUD, pause, game over. |
-| `js/app.js` | The flow and the HUD: scan → welcome → orders, score, combo, lives. |
+| `index.html` | The screens: viewfinder, how-to-play tour, HUD, pause, game over. |
+| `js/app.js` | The flow and the HUD: scan → how-to-play tour → orders, score, lives. |
 | `js/rules.js` | The rules as plain logic: orders, stages, scoring, clock, lives. Tested in node. |
 | `js/data.js` | Ingredients, recipes, facts and the difficulty ramp. |
 | `js/stage.js` | The 3D board: card tracking with the float-away fallback, dishes, building, serving, taps. |

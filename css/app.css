@@ -109,14 +109,6 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 .lockmark{width:16px;height:16px;flex:none;opacity:0;transform:scale(.4);transition:all .3s var(--anatomy-ease)}
 .score.locked .lockmark{opacity:1;transform:scale(1)}
 .score.locked{box-shadow:var(--anatomy-lift),0 0 0 2px var(--anatomy-red)}
-.mult{min-width:56px;display:grid;place-items:center;border-radius:6px;font:900 21px/1 var(--anatomy-mono);text-align:center;
-  background:var(--glass);color:var(--anatomy-strong);box-shadow:var(--anatomy-lift),0 0 0 1px var(--anatomy-mid)}
-.mult small{display:block;font-size:8px;letter-spacing:.1em;color:var(--anatomy-muted);font-weight:600;margin-top:3px}
-.mult[data-m="2"]{background:#f3dfb4}.mult[data-m="3"]{background:#f0c98c}
-.mult[data-m="4"]{background:#e9a868}.mult[data-m="5"]{background:var(--anatomy-red);color:#fff8ec}
-.mult[data-m="5"] small{color:#fff8ec}
-.mult.bump{animation:bump .5s var(--anatomy-ease)}
-@keyframes bump{40%{transform:scale(1.3) rotate(-6deg)}100%{transform:none}}
 .lives{display:flex;align-items:center;gap:1px;padding:0 6px;background:var(--glass)}
 .lives svg{width:20px;height:20px;transition:opacity .3s,transform .3s}
 .lives svg.gone{opacity:.2;transform:scale(.75)}
@@ -130,8 +122,6 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 .ordmain{display:flex;align-items:center;gap:8px}
 .ordtext{flex:1;min-width:0}
 .ordercard .name{font-weight:900;font-size:clamp(16px,4.6vw,20px);color:var(--anatomy-strong);line-height:1.1}
-.hint{font-family:var(--anatomy-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--anatomy-muted);margin-top:3px}
-.hint b{color:var(--anatomy-red)}
 .ordread{font-size:15px;font-weight:800;color:var(--anatomy-strong);flex:none}
 .ticket{display:flex;gap:5px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:10px}
 .chip{position:relative;width:62px;padding:3px 2px 4px;border-radius:10px;background:var(--anatomy-card);box-shadow:0 0 0 1px var(--anatomy-faint);
@@ -217,8 +207,7 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 /* small phones */
 @media (max-width:380px){
   .odo{font-size:20px}
-  .mult{min-width:48px;font-size:18px}
-  .lives svg{width:17px;height:17px}
+    .lives svg{width:17px;height:17px}
   .chip{width:54px}.chip svg{width:42px;height:42px}.chip span{font-size:9.5px}
 }
 @media (max-height:680px){
@@ -254,14 +243,10 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 .ordpic{width:58px;height:46px;flex:none;object-fit:contain;filter:drop-shadow(0 2px 3px #3b2a1c40)}
 .chip img{width:46px;height:46px;object-fit:contain;display:block}
 .ticket .sep{width:9px;height:2px;background:var(--anatomy-lo);border-radius:2px}
-.ticket .group{display:flex;gap:3px;padding:2px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--anatomy-faint);background:var(--anatomy-shade-3)}
-.ticket .group .chip{box-shadow:none}
-.ticket .group .chip.next{box-shadow:0 0 0 2.5px var(--anatomy-red)}
 
 
 /* labels under the dishes */
-.tlabel.hint{animation:hintlabel 1s ease-in-out infinite}
-@keyframes hintlabel{50%{box-shadow:0 0 0 2.5px var(--anatomy-red),0 2px 6px #3b2a1c33}}
+.tlabel@keyframes hintlabel{50%{box-shadow:0 0 0 2.5px var(--anatomy-red),0 2px 6px #3b2a1c33}}
 .lives svg{width:24px;height:20px}
 
 /* game over: what you made */
@@ -311,3 +296,20 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 /* the score row and the order card share one column, so their edges line up exactly */
 .hud.top{width:100%;max-width:none;margin:0}
 .ordercard{width:100%;margin:0}
+
+/* ================= no small text anywhere ================= */
+.chip{width:68px}
+.chip span{font-size:12.5px;min-height:2.2em}
+.ordercard{padding-top:10px}
+.ordercard .name{font-size:clamp(18px,5vw,22px)}
+.coach{padding:16px 16px 12px}
+.coach-text{font-size:16px}
+.stats{grid-template-columns:repeat(2,1fr)}
+.stats b{font-size:24px}
+.stats span{font:700 14px/1.3 var(--ui);letter-spacing:0;text-transform:none;color:var(--anatomy-text)}
+.learned{font-size:15px}
+.newbest{font-size:14px}
+@media (max-width:380px){ .chip{width:60px} .chip span{font-size:11.5px} }
+@media (max-height:680px){ .chip{width:60px} .chip span{font-size:11.5px} }
+@media (orientation:landscape) and (max-height:560px){ .chip{width:58px} .chip img{width:38px;height:38px} .chip span{font-size:11.5px} }
+.ticket .step{display:flex;align-items:center;gap:5px}

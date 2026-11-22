@@ -13,7 +13,7 @@
 import * as THREE from 'three';
 import { setupRenderer, environment, stageLights, fitShadow, roomLight } from './look.js';
 import { rawModel, assembly, finishedModel, boardModel, dishModel, contactShadow } from './models.js';
-import { BOARD, TOKEN_SCALE, PLAN_SCALE, dishPositions } from './layout.js';
+import { BOARD, TOKEN_SCALE, PLAN_SCALE, CENTER, DISH_R, dishPositions } from './layout.js';
 import { snapshot, disposeStudio } from './icons.js';
 import { INGREDIENTS } from './data.js';
 
@@ -413,6 +413,32 @@ export function tokenScreen(id){
   if (tk){ _v.copy(tk.node.position); _v.y += 3; } else _v.set(0, BOARD.top + 3, 0);
   R.content.localToWorld(_v);
   return toScreen(_v);
+}
+// Screen rectangles for the how-to-play tour: the middle of the board, and all the dishes.
+function rectOf(points){
+  let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+  for (const [x, y, z] of points){
+    _v.set(x, y, z); R.content.localToWorld(_v);
+    const s = toScreen(_v);
+    l = Math.min(l, s.x); r = Math.max(r, s.x); t = Math.min(t, s.y); b = Math.max(b, s.y);
+  }
+  l = Math.max(4, l); t = Math.max(4, t); r = Math.min(innerWidth - 4, r); b = Math.min(innerHeight - 4, b);
+  return { left: l, top: t, right: r, bottom: b, width: Math.max(0, r - l), height: Math.max(0, b - t) };
+}
+export function plateRect(){
+  R.stage.updateMatrixWorld(true);
+  const pts = [];
+  for (const x of [-CENTER.hx, CENTER.hx]) for (const z of [-CENTER.hz, CENTER.hz]) for (const y of [BOARD.top, BOARD.top + 4]) pts.push([x, y, z]);
+  return rectOf(pts);
+}
+export function tokensRect(){
+  R.stage.updateMatrixWorld(true);
+  const pts = [];
+  for (const tk of R.tokens.values()){
+    const { x, z } = tk.node.position;
+    for (const dx of [-DISH_R, DISH_R]) for (const dz of [-DISH_R, DISH_R]) for (const y of [BOARD.top, BOARD.top + 3]) pts.push([x + dx, y, z + dz]);
+  }
+  return pts.length ? rectOf(pts) : plateRect();
 }
 export function plateScreen(){ _v.set(0, BOARD.top + 3, 0); R.content.localToWorld(_v); return toScreen(_v); }
 
