@@ -47,38 +47,36 @@
 
 <div id="found" class="overlay"><div class="plate badge"><div class="stamp"><svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><b>Found it!</b></div></div>
 
-<!-- ============ 2 · WELCOME ============ -->
-<section id="intro" class="screen dim">
-  <div class="col center">
-    <div class="plate welcome">
-      <img class="hero-dish" id="heroDish" alt="">
-      <h1>Sushi Chef</h1>
-      <p>An order appears at the top of the screen. Tap the ingredients on the board in the right order to build it, and finish before the clock runs out. Serve as many plates as you can.</p>
-      <button class="btn red" id="goBtn">Let's cook!</button>
+<!-- ============ 2 · HOW TO PLAY: a short guided tour before the first order starts ============ -->
+<div id="howto" class="overlay">
+  <div class="spot" id="spot"></div>
+  <div class="plate coach" id="coach">
+    <div class="coach-title" id="coachTitle"></div>
+    <div class="coach-text" id="coachText"></div>
+    <div class="coach-row">
+      <button class="link" id="coachSkip">Skip</button>
+      <button class="btn red small" id="coachNext">Next</button>
     </div>
   </div>
-</section>
+</div>
 
 <!-- ============ 3 · AR HUD ============ -->
 <div id="hud" class="overlay">
   <div class="hudstack">
     <div class="hud top">
       <div class="plate score" id="scoreBox">
-        <div><div class="cap">Score</div><div class="odo" id="odo"></div></div>
+        <div class="odo" id="odo"></div>
         <svg class="lockmark" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="8" rx="1.5" fill="#b5452f"/><path d="M5 7V5a3 3 0 0 1 6 0v2" fill="none" stroke="#b5452f" stroke-width="1.8"/></svg>
       </div>
-      <div class="mult" id="mult" data-m="1"><div>×1<small>combo</small></div></div>
       <div class="plate lives" id="lives" aria-label="Lives"></div>
       <button class="iconbtn" id="pauseBtn" aria-label="Pause"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1.2" fill="currentColor"/></svg></button>
     </div>
 
     <div class="plate ordercard" id="order">
-      <span class="corner tl" id="ordNo">Order 01</span>
       <div class="ordmain">
         <img class="ordpic" id="ordPic" alt="">
         <div class="ordtext">
           <div class="name" id="ordName"></div>
-          <div class="hint" id="hint"></div>
         </div>
         <div class="ordread mono" id="ordRead">0/0</div>
       </div>
@@ -104,13 +102,11 @@
   <div class="col center">
     <div class="plate final">
       <h2>Game over</h2>
-      <div class="cap">Final score</div>
       <div class="bignum" id="finalScore">0</div>
       <div class="newbest" id="newBest">★ NEW BEST ★</div>
       <div class="stats">
-        <div><b id="stPlates">0</b><span>plates</span></div>
-        <div><b id="stStreak">0</b><span>perfect streak</span></div>
-        <div><b id="stBest">0</b><span>best score</span></div>
+        <div><b id="stPlates">0</b><span>Plates served</span></div>
+        <div><b id="stBest">0</b><span>Best score</span></div>
       </div>
       <div class="learned" id="learned"></div>
       <div class="made" id="made"></div>
