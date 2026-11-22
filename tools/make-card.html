@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sushi Chef · make the card</title>
+</head>
+<body style="font:14px/1.5 ui-monospace,monospace;padding:16px">
+<!-- ?scale=1 builds the card at the artwork's own size (default 2×).
+     Turns the card artwork (assets/card-art.png, transparent background) into the printable
+     card (white background with a margin, as it comes out of a printer) and compiles the
+     MindAR tracking data from it. Open with ?build=1 to run.
+     window.__card holds the results: the card PNG and targets.mind as base64, and the
+     feature counts. Save them as sushi_card.png and targets.mind. -->
+<pre id="log"></pre>
+<div id="out"></div>
+<script type="module">
+const log = (t) => { document.getElementById('log').textContent += t + '\n'; };
+const toB64 = (buf) => { let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(s); };
+
+async function build(){
+  const art = new Image();
+  art.src = '../assets/card-art.png?' + Date.now();
+  await art.decode();
+  // 2× the artwork, on white, with a 6% margin all round
+  const k = +(new URLSearchParams(location.search).get('scale') || 2), pad = Math.round(Math.max(art.width, art.height) * k * 0.06);
+  const c = document.createElement('canvas');
+  c.width = art.width * k + pad * 2; c.height = art.height * k + pad * 2;
+  const g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height);
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(art, pad, pad, art.width * k, art.height * k);
+  const blob = await new Promise((ok) => c.toBlob(ok, 'image/png'));
+  const card = new Image(); card.src = URL.createObjectURL(blob); await card.decode();
+  card.style.maxWidth = '420px'; card.style.border = '1px solid #ccc';
+  document.getElementById('out').appendChild(card);
+  log(`card: ${c.width} × ${c.height} px (aspect ${(c.width / c.height).toFixed(3)})`);
+
+  log('loading MindAR compiler…');
+  await import('https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js');
+  const compiler = new window.MINDAR.IMAGE.Compiler();
+  let last = -10;
+  const data = await compiler.compileImageTargets([card], (p) => { if (p - last >= 20){ last = p; log(`compiling ${p.toFixed(0)}%`); } });
+  const t = data[0];
+  const detection = t.matchingData.reduce((n, l) => n + l.maximaPoints.length + l.minimaPoints.length, 0);
+  const tracking = t.trackingData.reduce((n, l) => n + l.points.length, 0);
+  log(`detection points: ${detection} over ${t.matchingData.length} scales; tracking points: ${tracking}`);
+  const mind = await compiler.exportData();
+  window.__card = { png: toB64(await blob.arrayBuffer()), mind: toB64(mind), w: c.width, h: c.height, detection, scales: t.matchingData.length, tracking };
+  log('done');
+}
+if (new URLSearchParams(location.search).has('build')) build().catch((e) => { log('ERROR ' + (e.stack || e)); window.__card = { error: String(e) }; });
+</script>
+</body>
+</html>
