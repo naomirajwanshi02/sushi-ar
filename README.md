@@ -6,7 +6,7 @@ a sushi chef does, step by step, against the clock. Made for ages 8+.
 
 **Play:** https://naomirajwanshi02.github.io/sushi-ar/
 **Without the card:** https://naomirajwanshi02.github.io/sushi-ar/?demo=1
-**The card to scan:** [`sushi_main.jpeg`](sushi_main.jpeg)
+**The card to scan:** [`sushi_card.png`](sushi_card.png)
 
 ## How to play
 
@@ -120,7 +120,9 @@ with a button that copies the link.
 | `js/models.js` / `js/textures.js` | The sushi, the board, the dishes and their textures. |
 | `js/look.js` / `js/icons.js` | Lighting, and photographing models for the ticket. |
 | `css/` + `vendor/anatomy/` | The sepia theme and the layout. |
-| `sushi_main.jpeg` / `targets.mind` | The card and its compiled MindAR data (1,877 detection points). |
+| `sushi_card.png` / `targets.mind` | The card to print (three nigiri in watercolour) and its compiled MindAR data. |
+| `assets/card-art.png` | The card artwork with a transparent background. |
+| `tools/make-card.html` | Turns the artwork into the printable card and compiles `targets.mind` (`?build=1`). |
 | `target.png` / `target_card.mind` | A square backup card: `?target=./target_card.mind`. |
 | `js/layout.js` | Where the dishes and the piece in the middle sit on the board. |
 | `tests/` | `sh tests/run.sh` (node only): 43 checks of the rules, and checks that dishes never overlap each other, the board edge or the middle. |
@@ -129,8 +131,15 @@ with a button that copies the link.
 
 ## Printing the card
 
-Print `sushi_main.jpeg` about **18 cm wide** (it's 3:2, so about 18 × 12 cm) on **matte** paper, in
-even light. Hold the phone 20–40 cm away. A laptop or tablet screen also works.
+Print `sushi_card.png` about **15 cm wide** (it's nearly square, so about 15 × 13.5 cm) on **matte**
+paper, in even light, and don't crop it. Hold the phone 20–40 cm away. A laptop or tablet screen
+also works.
+
+The card scores **528 detection points over 7 scales, with 32 tracking points**. That is enough to
+be found reliably (checked with the card filling the view, and smaller and rotated on a table), but
+it is less than a busier picture would give, because watercolour has soft edges and a lot of white.
+Good light and a flat, matte print matter more with this card. To change the picture, replace
+`assets/card-art.png` and run `tools/make-card.html?build=1`.
 
 Version pins: `mind-ar@1.2.5` needs `three@0.160.0`, because three r162 removed `sRGBEncoding`.
 These are the same pins as Noh_Masks and Ramen_Builder.
