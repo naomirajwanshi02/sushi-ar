@@ -47,6 +47,18 @@
 
 <div id="found" class="overlay"><div class="plate badge"><div class="stamp"><svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><b>Found it!</b></div></div>
 
+<!-- ============ 2 · INTRO: after the card is found ============ -->
+<section id="intro" class="screen dim">
+  <div class="col center">
+    <div class="plate welcome">
+      <button class="closex" id="introClose" aria-label="Close and go back to scanning"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>
+      <img class="hero-art" src="assets/card-art-cutout.png" alt="Three pieces of nigiri sushi">
+      <h1>Sushi Chef</h1>
+      <button class="btn red" id="startBtn">Start</button>
+    </div>
+  </div>
+</section>
+
 <!-- ============ 2 · HOW TO PLAY: a short guided tour before the first order starts ============ -->
 <div id="howto" class="overlay">
   <div class="spot" id="spot"></div>
@@ -112,7 +124,7 @@
       <div class="made" id="made"></div>
       <div class="over-actions">
         <button class="btn red" id="againBtn">Play again</button>
-        <button class="btn ghost" id="rescanBtn">Scan again</button>
+        <button class="btn ghost" id="exitBtn">Exit</button>
       </div>
     </div>
   </div>

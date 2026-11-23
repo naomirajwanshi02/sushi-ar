@@ -11,13 +11,18 @@ a sushi chef does, step by step, against the clock. Made for ages 8+.
 ## How to play
 
 1. Open the link. It goes straight to the camera viewfinder. Point it at the card.
-2. When the card is found, a red stamp says *Found it!* and a short **how-to-play tour** starts, as
-   in Ramen_Builder: four tooltips light up the order, the middle of the board, the ingredient
-   dishes, and the score and lives. The clock only starts when you tap **Let's cook!** (or Skip).
-3. An **order** comes in, such as *California Roll*. Ingredients wait on little glazed dishes round
+2. When the card is found, a red stamp says *Found it!* and the **intro** opens, as in Noh_Masks:
+   the card's sushi (without its background), the title and **Start**. The ✕ in the panel's corner
+   goes back to the scanning screen.
+3. **Start** runs a short **how-to-play tour** the first time, as in Ramen_Builder: four tooltips
+   light up the order, the middle of the board, the dishes, and the score and lives. The clock only
+   starts on **Let's cook!** (or Skip).
+4. An **order** comes in, such as *California Roll*. Ingredients wait on little glazed dishes round
    the board. Tap them in the **chef's order**; the piece builds up in the middle of the board.
-4. When every ingredient is in, the plate is **served**: a pair of nigiri, or the roll cut into six.
+5. When every ingredient is in, the plate is **served**: a pair of nigiri, or the roll cut into six.
    Then the next order arrives.
+6. When the last life is gone (or you end the game from pause), **Game over** offers **Play again**
+   or **Exit**. Exit goes back to the scanning screen; scan the card again to return to the intro.
 
 **The card is only needed to start.** While the card is in view the board sits on it. Point the
 phone away and the board glides to a resting place in front of the camera, so the game carries on.
@@ -123,7 +128,8 @@ with a button that copies the link.
 | `js/look.js` / `js/icons.js` | Lighting, and photographing models for the ticket. |
 | `css/` + `vendor/anatomy/` | The sepia theme and the layout. |
 | `sushi_card.png` / `targets.mind` | The card to print (three nigiri in watercolour) and its compiled MindAR data. |
-| `assets/card-art.png` | The card artwork with a transparent background. |
+| `assets/card-art.png` | The card artwork, as supplied. |
+| `assets/card-art-cutout.png` | The same art without its white background, shown on the intro. Made by `tools/cutout.html?build=1`. |
 | `tools/make-card.html` | Turns the artwork into the printable card and compiles `targets.mind` (`?build=1`). |
 | `target.png` / `target_card.mind` | A square backup card: `?target=./target_card.mind`. |
 | `js/layout.js` | Where the dishes and the piece in the middle sit on the board. |

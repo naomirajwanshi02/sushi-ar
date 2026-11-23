@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Sushi Chef · cut out the card art</title></head>
+<body style="font:14px/1.5 ui-monospace,monospace;padding:16px;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/20px 20px">
+<!-- Makes assets/card-art-cutout.png, the card artwork without its white background, for the
+     intro screen. The background is flood-filled in from the edges, so white inside the sushi
+     (rice highlights) is kept, and the edge is softened so the watercolour doesn't look cut.
+     Open with ?build=1; window.__cut holds the PNG as base64. -->
+<pre id="log"></pre><div id="out"></div>
+<script type="module">
+const log = (t) => { document.getElementById('log').textContent += t + '\n'; };
+async function build(){
+  const img = new Image(); img.src = '../assets/card-art.png?' + Date.now(); await img.decode();
+  const W = img.width, H = img.height;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+  const im = g.getImageData(0, 0, W, H), d = im.data;
+  const light = (i) => Math.min(d[i], d[i + 1], d[i + 2]);            // how close to white
+  const LIMIT = 236;                                                   // lighter than this counts as paper
+  const bg = new Uint8Array(W * H), stack = [];
+  const push = (x, y) => { const k = y * W + x; if (!bg[k] && light(k * 4) >= LIMIT){ bg[k] = 1; stack.push(k); } };
+  for (let x = 0; x < W; x++){ push(x, 0); push(x, H - 1); }
+  for (let y = 0; y < H; y++){ push(0, y); push(W - 1, y); }
+  while (stack.length){
+    const k = stack.pop(), x = k % W, y = (k / W) | 0;
+    if (x > 0) push(x - 1, y); if (x < W - 1) push(x + 1, y); if (y > 0) push(x, y - 1); if (y < H - 1) push(x, y + 1);
+  }
+  // paper → transparent; along the edge, fade by how white the paint is
+  for (let k = 0; k < W * H; k++){
+    const i = k * 4;
+    if (bg[k]){ d[i + 3] = 0; continue; }
+    const x = k % W, y = (k / W) | 0;
+    const nearPaper = (x > 0 && bg[k - 1]) || (x < W - 1 && bg[k + 1]) || (y > 0 && bg[k - W]) || (y < H - 1 && bg[k + W]);
+    if (nearPaper) d[i + 3] = Math.round(255 * Math.min(1, (255 - light(i)) / 40 + 0.35));
+  }
+  g.putImageData(im, 0, 0);
+  // trim to the drawing, with a small margin
+  let x0 = W, y0 = H, x1 = 0, y1 = 0;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3] > 8){ x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  const m = 6, tw = x1 - x0 + 1 + m * 2, th = y1 - y0 + 1 + m * 2;
+  const t = document.createElement('canvas'); t.width = tw; t.height = th;
+  t.getContext('2d').drawImage(c, x0 - m, y0 - m, tw, th, 0, 0, tw, th);
+  const blob = await new Promise((ok) => t.toBlob(ok, 'image/png'));
+  const shown = new Image(); shown.src = URL.createObjectURL(blob); document.getElementById('out').appendChild(shown);
+  const left = d.reduce((n, v, i) => (i % 4 === 3 && v === 0 ? n + 1 : n), 0);
+  log(`cut-out: ${tw} × ${th} px; ${(left / (W * H) * 100).toFixed(1)}% of the picture was paper`);
+  const b = new Uint8Array(await blob.arrayBuffer()); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000));
+  window.__cut = btoa(s);
+}
+if (new URLSearchParams(location.search).has('build')) build().catch((e) => { log('ERROR ' + e); window.__cut = 'error'; });
+</script>
+</body>
+</html>

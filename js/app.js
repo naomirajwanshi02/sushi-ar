@@ -20,7 +20,7 @@ const store = {
 const buzz = (ms) => { try { navigator.vibrate?.(ms); } catch { /* unsupported */ } };
 
 const G = createGame();
-const UI = { paused: false, lastTick: -1, started: false, touring: false };
+const UI = { paused: false, lastTick: -1, started: false, touring: false, toured: false };
 
 const show = (id) => document.querySelectorAll('.screen').forEach((el) => el.classList.toggle('on', el.id === id));
 const overlay = (id, on) => $(id).classList.toggle('on', on);
@@ -209,7 +209,19 @@ function onFound(){
   overlay('guide', false);
   buzz(40);
   overlay('found', true);
-  setTimeout(() => { overlay('found', false); startGame({ tour: true }); }, 1300);
+  setTimeout(() => { overlay('found', false); show('intro'); }, 1300);
+}
+
+// Back to the viewfinder, from the intro's cross or the game-over Exit. Scanning the card
+// again brings the intro back.
+function backToScan(){
+  UI.started = false; UI.paused = false; UI.touring = false;
+  G.reset();
+  show(null);
+  overlay('hud', false); overlay('howto', false); overlay('found', false);
+  Stage.rescan();
+  $('scanStatus').textContent = DEMO ? 'Demo mode has no card: tap “No card? Demo” to play again.' : 'Looking for the card…';
+  overlay('guide', true);
 }
 
 // ------------------------------------------------------------ how to play (as in Ramen_Builder)
@@ -308,7 +320,10 @@ $('pauseBtn').addEventListener('click', pause);
 $('resumeBtn').addEventListener('click', resume);
 $('quitBtn').addEventListener('click', () => { UI.paused = false; gameOver(); });
 $('againBtn').addEventListener('click', () => startGame());
-$('rescanBtn').addEventListener('click', () => location.reload());
+$('exitBtn').addEventListener('click', backToScan);
+$('introClose').addEventListener('click', backToScan);
+// Start runs the how-to-play tour the first time; after that it goes straight in.
+$('startBtn').addEventListener('click', () => { startGame({ tour: !UI.toured }); UI.toured = true; });
 $('scanRetry').addEventListener('click', () => location.reload());
 $('errBtn').addEventListener('click', () => location.reload());
 document.addEventListener('visibilitychange', () => { if (document.hidden && UI.started && !UI.paused) pause(); });
