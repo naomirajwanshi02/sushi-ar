@@ -133,11 +133,11 @@ with a button that copies the link.
 
 ## Printing the card
 
-Print `sushi_card.png` about **15 cm wide** (it's nearly square, so about 15 × 13.5 cm) on **matte**
+Print `sushi_card.png` about **15 cm wide** (it's nearly square, so about 15 × 13 cm) on **matte**
 paper, in even light, and don't crop it. Hold the phone 20–40 cm away. A laptop or tablet screen
 also works.
 
-The card scores **528 detection points over 7 scales, with 32 tracking points**. That is enough to
+The card scores **514 detection points over 7 scales, with 28 tracking points**. That is enough to
 be found reliably (checked with the card filling the view, and smaller and rotated on a table), but
 it is less than a busier picture would give, because watercolour has soft edges and a lot of white.
 Good light and a flat, matte print matter more with this card. To change the picture, replace
