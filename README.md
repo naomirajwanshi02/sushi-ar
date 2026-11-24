@@ -10,10 +10,13 @@ a sushi chef does, step by step, against the clock. Made for ages 8+.
 
 ## How to play
 
-1. Open the link. It goes straight to the camera viewfinder. Point it at the card.
-2. When the card is found, a red stamp says *Found it!* and the **intro** opens, as in Noh_Masks:
-   the card's sushi (without its background), the name, one line on what to do, steps 1 to 4 and
-   **Start**. The ✕ in the panel's corner goes back to the scanning screen.
+1. Usually the game is opened by **[Scan to Play](https://naomirajwanshi02.github.io/Scan_To_Play/)**,
+   the one link on the NFC tag: it scans the card and opens this game with `?demo=1&from=hub`, so
+   the intro is the very first thing on screen. Opened on its own, the game goes straight to its
+   camera viewfinder; point it at the card.
+2. As soon as the card is recognised the **intro** opens, with nothing in between. Its layout is
+   as tight as Pagoda's: the card's sushi (no shadow), the name, one line on what to do, steps 1 to
+   4 and **Start**. The ✕ in the panel's corner goes back to Scan to Play.
 3. **Start** opens the game with a short **how-to-play tour** the first time, as in Ramen_Builder.
    The tooltips come up first, before the board is seen on its own. Four tooltips
    light up the order, the middle of the board, the dishes, and the score and lives. The clock only
@@ -23,12 +26,12 @@ a sushi chef does, step by step, against the clock. Made for ages 8+.
 5. When every ingredient is in, the plate is **served**: a pair of nigiri, or the roll cut into six.
    Then the next order arrives.
 6. When the last life is gone (or you end the game from pause), **Game over** offers **Play again**
-   or **Exit**. Exit goes back to the scanning screen; scan the card again to return to the intro.
+   or **Exit**. Exit goes back to Scan to Play, which opens on its scanning screen (as Pagoda
+   goes back to Scan to Explore). The ✕ on this game's own scanning screen does the same.
 
 **The card is only needed to start.** Once it is recognised, card tracking pauses and the board
 stays in front of the camera for the whole game (as in Ramen_Builder), so it never jumps between
-the card and the screen. You can move the phone freely. Tracking only starts again when you go back
-to the scanning screen with ✕ or Exit.
+the card and the screen. You can move the phone freely. Leaving the game (✕ or Exit) returns to Scan to Play.
 
 ## The rules, and why the points add up
 
