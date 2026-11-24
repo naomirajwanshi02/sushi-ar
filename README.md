@@ -15,8 +15,8 @@ a sushi chef does, step by step, against the clock. Made for ages 8+.
    the intro is the very first thing on screen. Opened on its own, the game goes straight to its
    camera viewfinder; point it at the card.
 2. As soon as the card is recognised the **intro** opens, with nothing in between. Its layout is
-   as tight as Pagoda's: the card's sushi (no shadow), the name, one line on what to do, steps 1 to
-   4 and **Start**. The ✕ in the panel's corner goes back to Scan to Play.
+   as tight as Pagoda's: the card's sushi (no shadow), the name, one line on what to do, steps 1 to 4 in neat equal panels (as in Pagoda and Noh_Masks)
+   and **Start**. The ✕ in the panel's corner goes back to Scan to Play.
 3. **Start** opens the game with a short **how-to-play tour** the first time, as in Ramen_Builder.
    The tooltips come up first, before the board is seen on its own. Four tooltips
    light up the order, the middle of the board, the dishes, and the score and lives. The clock only
