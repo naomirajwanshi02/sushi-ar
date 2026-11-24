@@ -29,7 +29,7 @@ const R = {
   stage: null, content: null, look: null, room: null,
   tokens: new Map(), plan: null, planRoot: null, extra: [],
   tweens: [], hintIds: new Set(), labels: null, onPick: null, onTrack: null, onFound: null, found: false,
-  last: 0, floatDist: 2, rescanAt: 0,
+  last: 0, floatDist: 2,
 };
 
 // ------------------------------------------------------------------ tweens
@@ -90,19 +90,6 @@ function markFound(){
   R.onFound?.();
 }
 export function showBoard(on){ R.stage.visible = !!on && R.found; }
-// Back to the viewfinder: hide the board and wait for the card again. A short pause stops
-// the card that is still in view from reopening the game the instant you close it.
-export function rescan(){
-  reset();
-  R.found = false;
-  R.stage.visible = false;
-  R.hintIds.clear();
-  R.rescanAt = performance.now() + 1500;
-  // start looking for the card again from scratch
-  R.tracked = false; R.haveAnchor = false;
-  if (R.anchor) R.anchor.visible = false;
-  try { if (R.mindar) R.mindar.controller.processVideo(R.mindar.video); } catch { /* fine */ }
-}
 
 // ------------------------------------------------------------------ start: card (MindAR) or demo
 export async function start(container, { demo = false, onFound, onStatus, onPick, onTrack } = {}){
@@ -134,7 +121,7 @@ async function startCard(container, onStatus){
   anchor.onTargetUpdate = () => { if (anchor.visible){ R.anchorM.copy(anchor.group.matrix); R.haveAnchor = true; } };
   anchor.onTargetFound = () => {
     R.tracked = true; R.lostFor = 0;
-    if (!R.found && performance.now() > R.rescanAt) markFound();
+    if (!R.found) markFound();
     R.onTrack?.(true);
   };
   anchor.onTargetLost = () => { R.tracked = false; };
@@ -251,8 +238,6 @@ function frame(){
   const dt = Math.min((now - R.last) / 1000, 0.1);
   R.last = now;
   const t = now / 1000;
-  // after a rescan the card may already be in view: count it as found once the pause is over
-  if (!R.found && !R.demo && R.tracked && R.haveAnchor && now > R.rescanAt) markFound();
   if (R.found) placeStage(dt, t);
   runTweens(dt);
   // tokens breathe a little; wanted ones hop when the hint is on

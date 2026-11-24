@@ -183,7 +183,10 @@ function noCamera(text){
   $('copyLink').hidden = !IN_APP;
 }
 async function openScan(){
-  overlay('guide', true);
+  // Opened by the Scan to Play hub (?demo=1&from=hub): the card was already recognised
+  // there, so the intro is the first thing on screen. Start waits until the camera is up.
+  if (DEMO){ $('startBtn').disabled = true; show('intro'); }
+  else overlay('guide', true);
   $('scanRetry').hidden = true;
   if (!DEMO && (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia)){
     return noCamera(IN_APP ? `This app's browser can't use the camera. ${OPEN_IN_BROWSER}`
@@ -197,6 +200,7 @@ async function openScan(){
     });
   } catch (err){
     console.error(err);
+    if (DEMO){ show(null); overlay('guide', true); }
     const msg = String(err?.message || err?.name || err || '');
     noCamera(IN_APP ? `This app's browser didn't let the game use the camera. ${OPEN_IN_BROWSER}`
       : /NotAllowed|Permission/i.test(msg)
@@ -205,23 +209,20 @@ async function openScan(){
       : 'The camera did not start. Close other apps that use it and tap Try again.');
   }
 }
+// Straight to the intro: nothing in between once the card is recognised.
 function onFound(){
   overlay('guide', false);
   buzz(40);
-  overlay('found', true);
-  setTimeout(() => { overlay('found', false); show('intro'); }, 1300);
+  $('startBtn').disabled = false;
+  show('intro');
 }
 
-// Back to the viewfinder, from the intro's cross or the game-over Exit. Scanning the card
-// again brings the intro back.
-function backToScan(){
-  UI.started = false; UI.paused = false; UI.touring = false;
-  G.reset();
-  show(null);
-  overlay('hud', false); overlay('howto', false); overlay('found', false);
-  Stage.rescan();
-  $('scanStatus').textContent = DEMO ? 'Demo mode has no card: tap “No card? Demo” to play again.' : 'Looking for the card…';
-  overlay('guide', true);
+// Leaving the game goes back to the Scan to Play hub, the one link on the NFC tag, which
+// opens on its scanning screen (as Pagoda goes back to Scan to Explore).
+const HUB = 'https://naomirajwanshi02.github.io/Scan_To_Play/';
+function toHub(){
+  try { Stage.stop(); } catch { /* fine */ }
+  location.href = HUB;
 }
 
 // ------------------------------------------------------------ how to play (as in Ramen_Builder)
@@ -324,8 +325,9 @@ $('pauseBtn').addEventListener('click', pause);
 $('resumeBtn').addEventListener('click', resume);
 $('quitBtn').addEventListener('click', () => { UI.paused = false; gameOver(); });
 $('againBtn').addEventListener('click', () => startGame());
-$('exitBtn').addEventListener('click', backToScan);
-$('introClose').addEventListener('click', backToScan);
+$('exitBtn').addEventListener('click', toHub);
+$('introClose').addEventListener('click', toHub);
+$('guideClose').addEventListener('click', toHub);
 // Start runs the how-to-play tour the first time; after that it goes straight in.
 $('startBtn').addEventListener('click', () => { startGame({ tour: !UI.toured }); UI.toured = true; });
 $('scanRetry').addEventListener('click', () => location.reload());
