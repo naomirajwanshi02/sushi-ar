@@ -130,7 +130,7 @@ with a button that copies the link.
 | `sushi_card.png` / `targets.mind` | The card to print (three nigiri in watercolour) and its compiled MindAR data. |
 | `assets/card-art.png` | The card artwork, as supplied. |
 | `assets/card-art-cutout.png` | The same art without its white background, shown on the intro. Made by `tools/cutout.html?build=1`. |
-| `tools/make-card.html` | Turns the artwork into the printable card and compiles `targets.mind` (`?build=1`). |
+| `tools/make-card.html` | Crops the artwork to the drawing, makes the printable card and compiles `targets.mind` (`?build=1`). After rebuilding, bump `CARD_VERSION` in `js/stage.js` so phones fetch the new data. |
 | `target.png` / `target_card.mind` | A square backup card: `?target=./target_card.mind`. |
 | `js/layout.js` | Where the dishes and the piece in the middle sit on the board. |
 | `tests/` | `sh tests/run.sh` (node only): 43 checks of the rules, and checks that dishes never overlap each other, the board edge or the middle. |
@@ -139,11 +139,11 @@ with a button that copies the link.
 
 ## Printing the card
 
-Print `sushi_card.png` about **15 cm wide** (it's nearly square, so about 15 × 13 cm) on **matte**
+Print `sushi_card.png` about **15 cm wide** (about 15 × 10 cm) on **matte**
 paper, in even light, and don't crop it. Hold the phone 20–40 cm away. A laptop or tablet screen
 also works.
 
-The card scores **514 detection points over 7 scales, with 28 tracking points**. That is enough to
+The card is the drawing cropped close (the artwork is mostly empty paper, and paper on the card only makes the sushi smaller in the camera's view). It scores **680 detection points over 6 scales, with 47 tracking points**. That is enough to
 be found reliably (checked with the card filling the view, and smaller and rotated on a table), but
 it is less than a busier picture would give, because watercolour has soft edges and a lot of white.
 Good light and a flat, matte print matter more with this card. To change the picture, replace
