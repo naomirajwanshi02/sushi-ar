@@ -284,12 +284,16 @@ function startGame({ tour = false } = {}){
   UI.started = true; UI.paused = false;
   buildOdo($('odo'), ODO_DIGITS); showScore(0);
   renderLives();
+  // The tooltips come first: the tour's dimmed overlay goes up before the board appears,
+  // so the board is never seen on its own first.
+  UI.touring = tour;
+  if (tour) overlay('howto', true);
   show(null);
   overlay('hud', true);
-  requestAnimationFrame(layoutFree);
+  layoutFree();
   newOrder();
-  UI.touring = tour;
-  if (tour) setTimeout(showTour, 900);   // let the board settle first
+  Stage.showBoard(true);
+  if (tour) showTour();
 }
 function pause(){ if (!UI.started) return; UI.paused = true; show('pause'); }
 function resume(){ UI.paused = false; show(null); }

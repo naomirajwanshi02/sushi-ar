@@ -12,9 +12,10 @@ a sushi chef does, step by step, against the clock. Made for ages 8+.
 
 1. Open the link. It goes straight to the camera viewfinder. Point it at the card.
 2. When the card is found, a red stamp says *Found it!* and the **intro** opens, as in Noh_Masks:
-   the card's sushi (without its background), the title and **Start**. The ✕ in the panel's corner
-   goes back to the scanning screen.
-3. **Start** runs a short **how-to-play tour** the first time, as in Ramen_Builder: four tooltips
+   the card's sushi (without its background), the name, one line on what to do, steps 1 to 4 and
+   **Start**. The ✕ in the panel's corner goes back to the scanning screen.
+3. **Start** opens the game with a short **how-to-play tour** the first time, as in Ramen_Builder.
+   The tooltips come up first, before the board is seen on its own. Four tooltips
    light up the order, the middle of the board, the dishes, and the score and lives. The clock only
    starts on **Let's cook!** (or Skip).
 4. An **order** comes in, such as *California Roll*. Ingredients wait on little glazed dishes round
@@ -24,9 +25,10 @@ a sushi chef does, step by step, against the clock. Made for ages 8+.
 6. When the last life is gone (or you end the game from pause), **Game over** offers **Play again**
    or **Exit**. Exit goes back to the scanning screen; scan the card again to return to the intro.
 
-**The card is only needed to start.** While the card is in view the board sits on it. Point the
-phone away and the board glides to a resting place in front of the camera, so the game carries on.
-Bring the card back and the board settles onto it again.
+**The card is only needed to start.** Once it is recognised, card tracking pauses and the board
+stays in front of the camera for the whole game (as in Ramen_Builder), so it never jumps between
+the card and the screen. You can move the phone freely. Tracking only starts again when you go back
+to the scanning screen with ✕ or Exit.
 
 ## The rules, and why the points add up
 

@@ -327,3 +327,18 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 /* the New best badge takes no room unless it is shown */
 .newbest{display:none}
 .newbest.on{display:inline-block}
+
+/* intro steps, laid out as in Noh_Masks but without shaded boxes */
+.welcome p{margin:0 auto;max-width:34ch;font-size:15px}
+.steps{list-style:none;margin:4px 0 6px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;text-align:left}
+.steps li{display:flex;gap:9px;align-items:center;font-size:15px;line-height:1.25}
+.steps li > b{flex:none;width:28px;height:28px;border-radius:50%;background:var(--anatomy-red);color:#fff8ec;display:grid;place-items:center;font-size:14px}
+@media (max-width:360px){ .steps{grid-template-columns:1fr} }
+@media (orientation:landscape) and (max-height:560px){ .steps{grid-template-columns:repeat(4,1fr)} .steps li{font-size:14px} }
+@media (orientation:landscape) and (max-height:560px){
+  #intro .welcome{padding:26px 16px 14px;gap:6px}
+  #intro .hero-art{max-height:22vh;width:auto}
+  #intro h1{font-size:24px}
+  #intro .welcome p{font-size:14px;max-width:60ch}
+  #intro .steps{margin:2px 0}
+}

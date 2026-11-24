@@ -80,10 +80,16 @@ function setupRenderer2(renderer){
 }
 
 // The card has been recognised: show the board on it and tell the app.
+// Once the card is recognised the game no longer uses it: tracking pauses, and the board
+// stays in front of the camera for the whole game, so it never jumps between the card and
+// the screen. It stays hidden until the game starts (showBoard).
 function markFound(){
-  R.found = true; R.blend = 1; R.stage.visible = true;
+  R.found = true; R.blend = 0;
+  R.stage.visible = false;
+  try { R.mindar?.controller.stopProcessVideo(); } catch { /* not running */ }
   R.onFound?.();
 }
+export function showBoard(on){ R.stage.visible = !!on && R.found; }
 // Back to the viewfinder: hide the board and wait for the card again. A short pause stops
 // the card that is still in view from reopening the game the instant you close it.
 export function rescan(){
@@ -92,6 +98,10 @@ export function rescan(){
   R.stage.visible = false;
   R.hintIds.clear();
   R.rescanAt = performance.now() + 1500;
+  // start looking for the card again from scratch
+  R.tracked = false; R.haveAnchor = false;
+  if (R.anchor) R.anchor.visible = false;
+  try { if (R.mindar) R.mindar.controller.processVideo(R.mindar.video); } catch { /* fine */ }
 }
 
 // ------------------------------------------------------------------ start: card (MindAR) or demo
@@ -119,6 +129,7 @@ async function startCard(container, onStatus){
   buildScene();
   setupRenderer2(R.renderer);
   const anchor = mindar.addAnchor(0);
+  R.anchor = anchor;
   // MindAR blanks the anchor matrix the moment the card is lost, so keep our own copy.
   anchor.onTargetUpdate = () => { if (anchor.visible){ R.anchorM.copy(anchor.group.matrix); R.haveAnchor = true; } };
   anchor.onTargetFound = () => {
@@ -160,7 +171,7 @@ async function startDemo(container, onStatus){
   const fit = () => { R.renderer.setSize(innerWidth, innerHeight); R.camera.aspect = innerWidth / innerHeight; R.camera.updateProjectionMatrix(); };
   fit(); addEventListener('resize', fit);
   R.floatDist = 2;
-  R.found = true; R.stage.visible = true;
+  R.found = true; R.stage.visible = false;
   setTimeout(() => R.onFound?.(), 0);
 }
 
@@ -228,27 +239,10 @@ function floatPose(t){
 }
 
 function placeStage(dt, t){
-  if (R.tracked) R.lostFor = 0; else R.lostFor += dt;
-  // a short hold rides out a blink of lost tracking before the board starts to float
-  const want = R.haveAnchor && (R.tracked || R.lostFor < 0.5) ? 1 : 0;
-  R.blend += (want - R.blend) * (1 - Math.exp(-dt * 4.5));
-  if (Math.abs(want - R.blend) < 0.002) R.blend = want;
   floatPose(t);
-  const M = R.stage.matrix;
-  if (R.blend >= 1) M.copy(R.anchorM);
-  else if (R.blend <= 0) M.copy(R.floatM);
-  else {
-    R.floatM.decompose(_p, _q, _s);
-    R.anchorM.decompose(_p2, _q2, _s2);
-    const k = EASE.io(R.blend);
-    _p.lerp(_p2, k); _q.slerp(_q2, k); _s.lerp(_s2, k);
-    M.compose(_p, _q, _s);
-  }
+  R.stage.matrix.copy(R.floatM);
   R.stage.matrixWorldNeedsUpdate = true;
-  const onCard = R.blend > 0.5;
-  if (onCard !== R.onCardShown){ R.onCardShown = onCard; R.onTrack?.(onCard); }
 }
-export const onCard = () => R.blend > 0.5;
 
 // ------------------------------------------------------------------ frame
 const _v = new THREE.Vector3();
