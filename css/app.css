@@ -358,3 +358,6 @@ a.btn{display:inline-flex;align-items:center;justify-content:center;text-decorat
 #guide .scan-top{position:relative;padding-right:44px}
 #guide .scan-top .x{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:36px;height:36px;border:0;padding:0;background:transparent;
   color:var(--anatomy-strong);display:flex;align-items:center;justify-content:center;pointer-events:auto;cursor:pointer}
+/* the four steps as neat equal panels, as in Pagoda and Noh_Masks */
+#intro .steps{grid-auto-rows:1fr}
+#intro .steps li{height:100%;background:var(--anatomy-shade-3);border-radius:10px;box-shadow:inset 0 0 0 1px var(--anatomy-faint)}
