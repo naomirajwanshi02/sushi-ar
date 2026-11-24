@@ -18,7 +18,9 @@ import { snapshot, disposeStudio } from './icons.js';
 import { INGREDIENTS } from './data.js';
 
 const params = new URLSearchParams(location.search);
-export const TARGET_SRC = params.get('target') || './targets.mind';
+// The version tag makes phones fetch the new card data after an update instead of a cached copy.
+export const CARD_VERSION = '2026-11-24';
+export const TARGET_SRC = params.get('target') || `./targets.mind?v=${CARD_VERSION}`;
 
 const R = {
   renderer: null, scene: null, camera: null, mindar: null, video: null, demo: false,
@@ -110,7 +112,7 @@ async function startCard(container, onStatus){
   const { MindARThree } = await import('mindar-image-three');
   const mindar = new MindARThree({
     container, imageTargetSrc: TARGET_SRC, uiScanning: 'no', uiLoading: 'no', uiError: 'no',
-    filterMinCF: 0.001, filterBeta: 1000, warmupTolerance: 5, missTolerance: 10,
+    filterMinCF: 0.001, filterBeta: 1000, warmupTolerance: 3, missTolerance: 10,   // 3 frames in a row to show, as in Noh_Masks
   });
   R.mindar = mindar;
   R.renderer = mindar.renderer; R.scene = mindar.scene; R.camera = mindar.camera;

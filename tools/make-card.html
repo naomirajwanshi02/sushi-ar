@@ -5,9 +5,9 @@
 <title>Sushi Chef · make the card</title>
 </head>
 <body style="font:14px/1.5 ui-monospace,monospace;padding:16px">
-<!-- ?scale=1 builds the card at the artwork's own size (default 2×).
+<!-- ?scale=1 builds the card at the drawing's own size (default 2×).
      Turns the card artwork (assets/card-art.png, transparent background) into the printable
-     card (white background with a margin, as it comes out of a printer) and compiles the
+     card (the drawing cropped close, on white with a small margin, as it comes out of a printer) and compiles the
      MindAR tracking data from it. Open with ?build=1 to run.
      window.__card holds the results: the card PNG and targets.mind as base64, and the
      feature counts. Save them as sushi_card.png and targets.mind. -->
@@ -21,14 +21,26 @@ async function build(){
   const art = new Image();
   art.src = '../assets/card-art.png?' + Date.now();
   await art.decode();
-  // 2× the artwork, on white, with a 6% margin all round
-  const k = +(new URLSearchParams(location.search).get('scale') || 2), pad = Math.round(Math.max(art.width, art.height) * k * 0.06);
+  // Crop to the drawing itself: the artwork is mostly empty paper, and every bit of paper on
+  // the card makes the sushi smaller in the camera's view, so harder to recognise.
+  const probe = document.createElement('canvas'); probe.width = art.width; probe.height = art.height;
+  const pg = probe.getContext('2d', { willReadFrequently: true });
+  pg.fillStyle = '#fff'; pg.fillRect(0, 0, art.width, art.height); pg.drawImage(art, 0, 0);
+  const px = pg.getImageData(0, 0, art.width, art.height).data;
+  let x0 = art.width, y0 = art.height, x1 = 0, y1 = 0;
+  for (let y = 0; y < art.height; y++) for (let x = 0; x < art.width; x++){
+    const i = (y * art.width + x) * 4;
+    if (Math.min(px[i], px[i + 1], px[i + 2]) < 236){ x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  }
+  const aw = x1 - x0 + 1, ah = y1 - y0 + 1;
+  // 2× the drawing, on white, with a 4% margin all round
+  const k = +(new URLSearchParams(location.search).get('scale') || 2), pad = Math.round(Math.max(aw, ah) * k * 0.04);
   const c = document.createElement('canvas');
-  c.width = art.width * k + pad * 2; c.height = art.height * k + pad * 2;
+  c.width = aw * k + pad * 2; c.height = ah * k + pad * 2;
   const g = c.getContext('2d');
   g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height);
   g.imageSmoothingQuality = 'high';
-  g.drawImage(art, pad, pad, art.width * k, art.height * k);
+  g.drawImage(probe, x0, y0, aw, ah, pad, pad, aw * k, ah * k);
   const blob = await new Promise((ok) => c.toBlob(ok, 'image/png'));
   const card = new Image(); card.src = URL.createObjectURL(blob); await card.decode();
   card.style.maxWidth = '420px'; card.style.border = '1px solid #ccc';
