@@ -228,13 +228,13 @@ function toHub(){
 // ------------------------------------------------------------ how to play (as in Ramen_Builder)
 // A short tour points at each part of the screen. The clock waits until it's done.
 const TOUR = [
-  { title: 'Your order', text: 'This is the sushi to make. Add the ingredients <b>from left to right</b>. The ones outlined in red are next. Finish before the bar at the bottom runs out!',
+  { title: 'Your order', text: 'This is the sushi to make. Add the ingredients from left to right. The ones outlined in red are next. Finish before the bar at the bottom runs out!',
     rect: () => $('order').getBoundingClientRect() },
-  { title: 'Your sushi', text: 'Everything you pick goes here, and the sushi builds up step by step. When it\'s finished it is <b>served</b>, and the next order comes in.',
+  { title: 'Your sushi', text: 'Everything you pick goes here, and the sushi builds up step by step. When it\'s finished it is served, and the next order comes in.',
     rect: () => Stage.plateRect() },
-  { title: 'The ingredients', text: '<b>Tap a dish</b> to add what\'s on it. Some are not in the order, and pickled ginger never goes in sushi. A wrong tap <b>costs time</b>.',
+  { title: 'The ingredients', text: 'Tap a dish to add what\'s on it. Some are not in the order, and pickled ginger never goes in sushi. A wrong tap costs time.',
     rect: () => Stage.tokensRect() },
-  { title: 'Score and lives', text: 'Your <b>score</b> goes up with every plate. An order that runs out of time costs one of your <b>3 lives</b>. It gets faster as you go!',
+  { title: 'Score and lives', text: 'Your score goes up with every plate. An order that runs out of time costs one of your 3 lives. It gets faster as you go!',
     rect: () => document.querySelector('.hud.top').getBoundingClientRect() },
 ];
 let tourStep = 0;
@@ -250,7 +250,7 @@ function renderTour(){
   const pad = 6;
   Object.assign($('spot').style, { left: `${r.left - pad}px`, top: `${r.top - pad}px`, width: `${r.width + pad * 2}px`, height: `${r.height + pad * 2}px` });
   $('coachTitle').textContent = step.title;
-  $('coachText').innerHTML = step.text;
+  $('coachText').textContent = step.text;   // plain text: no bold, no colour
   $('coachNext').textContent = tourStep === TOUR.length - 1 ? "Let's cook!" : 'Next';
   // The card goes above or below the spotlight, whichever has more room. On a short
   // landscape screen neither fits, so it goes beside it instead.
